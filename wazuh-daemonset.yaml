@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: wazuh-agent
+  namespace: wazuh
+spec:
+  selector:
+    matchLabels:
+      app: wazuh-agent
+  template:
+    metadata:
+      labels:
+        app: wazuh-agent
+      name: wazuh-agent
+    spec:
+      hostPID: true
+      hostIPC: true
+      containers:
+      - name: wazuh-agent
+        image: kennyopennix/wazuh-agent:latest
+        livenessProbe:
+          httpGet:
+            path: /healz
+            port: 5000
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 3
+
+        ports:
+          - name: agent-http
+            containerPort: 5000
+            protocol: TCP
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
+        resources:
+          limits:
+            memory: 512Mi
+        env:
+        - name: JOIN_MANAGER
+          value: "wazuh.wazuh.svc.cluster.local"
+        - name: JOIN_MANAGER_MASTER_HOST
+          value: "wazuh.wazuh.svc.cluster.local"
+        - name: JOIN_MANAGER_WORKER_HOST
+          value: "wazuh-workers.wazuh.svc.cluster.local"
+        - name: JOIN_MANAGER_PROTOCOL
+          value: "https"
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: WAZUH_GROUPS
+          value: default
+        - name: JOIN_PASSWORD
+          value: password
+        - name: JOIN_MANAGER_USER
+          valueFrom:
+           secretKeyRef:
+             name: wazuh-api-cred
+             key: username
+        - name: JOIN_MANAGER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: wazuh-api-cred
+              key: password
+        - name: JOIN_MANAGER_API_PORT
+          value: "55000"
+        - name: JOIN_MANAGER_PORT
+          value: "1514"
+        - name: HEALTH_CHECK_PROCESSES
+          value: "ossec-execd,ossec-syscheckd,ossec-logcollector,wazuh-modulesd,ossec-authd"
+        volumeMounts:
+        - mountPath: /var/run
+          name: var-run
+        - mountPath: /host/dev
+          name: dev
+        - mountPath: /host/sys
+          name: sys
+          readOnly: true
+        - mountPath: /host/proc
+          name: proc
+          readOnly: true
+        - mountPath: /host/etc
+          name: etc
+          readOnly: true
+        - mountPath: /var/run/docker.sock
+          name: docker-socket-mount
+        - mountPath: /host/var/run/docker.sock
+          name: docker-socket-mount
+        - mountPath: /host/boot
+          name: boot
+          readOnly: true
+        - mountPath: /host/usr
+          name: usr
+          readOnly: true
+        - mountPath: /host/lib/modules
+          name: modules
+          readOnly: true
+        - mountPath: /host/var/log
+          name: log
+          readOnly: true
+      volumes:
+      - name: docker-socket-mount
+        hostPath:
+          path: /var/run/docker.sock
+      - name: var-run
+        hostPath:
+          path: /var/run
+      - name: dev
+        hostPath:
+          path: /dev
+      - name: sys
+        hostPath:
+          path: /sys
+      - name: proc
+        hostPath:
+          path: /proc
+      - name: etc
+        hostPath:
+          path: /etc
+      - name: boot
+        hostPath:
+          path: /boot
+      - name: usr
+        hostPath:
+          path: /usr
+      - name: modules
+        hostPath:
+          path: /lib/modules
+      - name: log
+        hostPath:
+          path: /var/logs

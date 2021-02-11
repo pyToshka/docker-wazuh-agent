@@ -1,0 +1,12 @@
+.idea/
+__pycache__/
+build/
+.DS_Store
+.env
+venv/
+main.py
+*.json
+src/
+register_agent.py__
+test.py
+docker-compose.yaml

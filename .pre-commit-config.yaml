@@ -1,0 +1,69 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+    -   id: check-docstring-first
+    -   id: check-merge-conflict
+    -   id: mixed-line-ending
+        args: [--fix=lf]
+- repo: https://github.com/ambv/black
+  rev: stable
+  hooks:
+    - id: black
+- repo: https://github.com/ambv/black
+  rev: stable
+  hooks:
+  - id: black
+    language_version: python3.8
+- repo: https://github.com/motet-a/jinjalint
+  rev: ''
+  hooks:
+  - id: jinjalint
+- repo: https://github.com/pre-commit/pygrep-hooks
+  rev: v1.7.1  # Use the ref you want to point at
+  hooks:
+  - id: python-use-type-annotations
+  - id: python-check-blanket-noqa
+  - id: python-no-eval
+  - id: python-check-mock-methods
+  - id: rst-backticks
+  - id: text-unicode-replacement-char
+- repo: https://github.com/jumanjihouse/pre-commit-hooks
+  rev: master  # or specific git tag
+  hooks:
+    - id: bundler-audit
+    - id: check-mailmap
+    - id: fasterer
+    - id: forbid-binary
+    - id: git-check
+    - id: markdownlint
+    - id: reek
+    - id: require-ascii
+    - id: rubocop
+    - id: script-must-have-extension
+    - id: script-must-not-have-extension
+    - id: shellcheck
+    - id: shfmt
+- repo: https://github.com/jorisroovers/gitlint
+  rev: 'v0.15.0'
+  hooks:
+  - id: gitlint
+- repo: local
+  hooks:
+  - id: flake8
+    name: flake8
+    stages: [commit]
+    language: system
+    entry: flake8
+    types: [python]
+- repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+  rev: v1.2.1
+  hooks:
+  - id: python-safety-dependencies-check
+- repo: https://github.com/PyCQA/bandit
+  rev: '1.7.0'
+  hooks:
+  - id: bandit
