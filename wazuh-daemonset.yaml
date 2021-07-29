@@ -130,4 +130,4 @@ spec:
           path: /lib/modules
       - name: log
         hostPath:
-          path: /var/logs
+          path: /var/log
