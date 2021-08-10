@@ -64,8 +64,6 @@ Example:
 
 ```yaml
 env:
-    - name: JOIN_MANAGER
-      value: "wazuh.wazuh.svc.cluster.local"
     - name: JOIN_MANAGER_MASTER_HOST
       value: "wazuh.wazuh.svc.cluster.local"
     - name: JOIN_MANAGER_WORKER_HOST
@@ -78,8 +76,6 @@ env:
           fieldPath: spec.nodeName
     - name: WAZUH_GROUPS
       value: default
-    - name: JOIN_PASSWORD
-      value: password
     - name: JOIN_MANAGER_USER
       valueFrom:
        secretKeyRef:

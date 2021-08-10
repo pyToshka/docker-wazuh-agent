@@ -26,7 +26,6 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 10
           failureThreshold: 3
-
         ports:
           - name: agent-http
             containerPort: 5000
@@ -38,22 +37,20 @@ spec:
           limits:
             memory: 512Mi
         env:
-        - name: JOIN_MANAGER
-          value: "wazuh.wazuh.svc.cluster.local"
         - name: JOIN_MANAGER_MASTER_HOST
           value: "wazuh.wazuh.svc.cluster.local"
         - name: JOIN_MANAGER_WORKER_HOST
           value: "wazuh-workers.wazuh.svc.cluster.local"
         - name: JOIN_MANAGER_PROTOCOL
           value: "https"
+        - name: FLASK_BIND
+          value: "0.0.0.0"
         - name: NODE_NAME
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
         - name: WAZUH_GROUPS
           value: default
-        - name: JOIN_PASSWORD
-          value: password
         - name: JOIN_MANAGER_USER
           valueFrom:
            secretKeyRef:
