@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
+    rev: f95941eae9e108e2124c55ad97475aada32bba8d
     hooks:
     -   id: check-yaml
     -   id: end-of-file-fixer
@@ -10,20 +10,20 @@ repos:
     -   id: mixed-line-ending
         args: [--fix=lf]
 - repo: https://github.com/ambv/black
-  rev: stable
+  rev: b1d060101626aa1c332f52e4bdf0ae5e4cc07990
   hooks:
     - id: black
 - repo: https://github.com/ambv/black
-  rev: stable
+  rev: b1d060101626aa1c332f52e4bdf0ae5e4cc07990
   hooks:
   - id: black
     language_version: python3.8
 - repo: https://github.com/motet-a/jinjalint
-  rev: ''
+  rev: '01e0a4d8f1ee775aee00eb9d715eff2b4cc49e4d'
   hooks:
   - id: jinjalint
 - repo: https://github.com/pre-commit/pygrep-hooks
-  rev: v1.7.1  # Use the ref you want to point at
+  rev: c1fb376edcbd404e10c835f3b420c10503593d58  # Use the ref you want to point at
   hooks:
   - id: python-use-type-annotations
   - id: python-check-blanket-noqa
@@ -32,7 +32,7 @@ repos:
   - id: rst-backticks
   - id: text-unicode-replacement-char
 - repo: https://github.com/jumanjihouse/pre-commit-hooks
-  rev: master  # or specific git tag
+  rev: 2.1.5  # or specific git tag
   hooks:
     - id: bundler-audit
     - id: check-mailmap
@@ -48,7 +48,7 @@ repos:
     - id: shellcheck
     - id: shfmt
 - repo: https://github.com/jorisroovers/gitlint
-  rev: 'v0.15.0'
+  rev: '1a0ed8d03ac002f74f1b33706d509dcb4425ab4d'
   hooks:
   - id: gitlint
 - repo: local
@@ -60,10 +60,10 @@ repos:
     entry: flake8
     types: [python]
 - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
-  rev: v1.2.1
+  rev: 7fdb07b03cb7103198eb13a614de75725cfd2feb
   hooks:
   - id: python-safety-dependencies-check
 - repo: https://github.com/PyCQA/bandit
-  rev: '1.7.0'
+  rev: '2bd1ffaae1b83102af8587dcbeecd0b402dbec4e'
   hooks:
   - id: bandit
