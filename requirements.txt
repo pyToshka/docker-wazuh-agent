@@ -4,4 +4,4 @@ urllib3==1.26.5
 py-healthcheck==1.10.1
 Flask==1.1.2
 psutil==5.8.0
-loguru==0.5.3
+loguru==0.6.0
