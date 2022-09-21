@@ -1,4 +1,4 @@
-FROM  bitnami/minideb:latest
+FROM  bitnami/minideb:latest-amd64
 LABEL maintainer="medvedev.yp@gmail.com"
 LABEL version="4.0.4"
 LABEL description="Wazuh Docker Agent"
