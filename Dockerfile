@@ -15,7 +15,7 @@ ENV FLASK_ENV="development"
 ENV FLASK_DEBUG=0
 ENV FLASK_BIND=0.0.0.0
 RUN install_packages \
-  procps curl apt-transport-https gnupg2 inotify-tools python-docker python3-pip python3-setuptools python3-dev gcc && \
+  procps curl apt-transport-https gnupg2 inotify-tools python3-docker python3-pip python3-setuptools python3-dev gcc && \
   curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - && \
   echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list && \
   install_packages wazuh-agent && \
