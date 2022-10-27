@@ -10,7 +10,15 @@ Wazuh Agent as Docker Image with auto registration on Wazuh server.
 
 As well as local docker You can deploy the image to Kubernetes as DaemonSet.
 
-Current agent version is `4.0.4`
+Current agent version is `4.3.9`
+
+## Structure
+
+`register_agent.py` - Simple script for auto register docker based agent
+
+`cleanup_agents.py` - Cleanup disconnected or never connected agents older than n days
+
+`deregister_agent.py` - Simple de-registration of agent
 
 ## Environments
 

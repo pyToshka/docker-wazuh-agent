@@ -113,22 +113,28 @@ def code_desc(http_status_code):
 def add_agent(agt_name, agt_ip=None):
     if agt_ip:
         status_code, response = req(
-            "post", "agents", {"name": agt_name, "ip": agt_ip, "force_time": 1}
+            "post", "agents", {"name": agt_name, "ip": agt_ip}
         )
     else:
         status_code, response = req(
-            "post", "agents", {"name": str(agt_name), "force_time": 1}
+            "post", "agents", {"name": str(agt_name)}
         )
 
     if status_code == 200 and response["error"] == 0:
         r_id = response["data"]["id"]
         r_key = response["data"]["key"]
         return r_id, r_key
+    elif status_code == 400:
+        status_code, response = req("get", f"agents?pretty=true&q=name={agt_name}")
+        for items in response["data"]["affected_items"]:
+            status_code, response = req("delete", f"agents?pretty=true&older_than=0s&agents_list={items['id']}&status=all")
+            msg = json.dumps(response, indent=4, sort_keys=True)
+            code = f"Status: {status_code} - {code_desc(status_code)}"
+            logger.error(f"INFO - DELETE AGENT:\n{code}\n{msg}")
     else:
         msg = json.dumps(response, indent=4, sort_keys=True)
         code = f"Status: {status_code} - {code_desc(status_code)}"
         logger.error(f"ERROR - ADD AGENT:\n{code}\n{msg}")
-        exit(1)
 
 
 def info_agent(agt_name, pretty=None):
@@ -173,7 +179,7 @@ def execute(cmd_list, stdin=None):
 
 
 def restart_ossec():
-    cmd = "/var/ossec/bin/ossec-control"
+    cmd = "/var/ossec/bin/wazuh-control"
     std_out, std_err, r_code = execute([cmd, "restart"])
     restarted = False
 
@@ -189,7 +195,7 @@ def restart_ossec():
 
 
 def status_ossec():
-    cmd = "/var/ossec/bin/ossec-control"
+    cmd = "/var/ossec/bin/wazuh-control"
     std_out, std_err, r_code = execute([cmd, "status"])
     status = False
     for line_output in std_out.split(os.linesep):

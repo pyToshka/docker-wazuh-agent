@@ -1,6 +1,6 @@
 FROM  bitnami/minideb:latest-amd64
 LABEL maintainer="medvedev.yp@gmail.com"
-LABEL version="4.0.4"
+LABEL version="4.3.9"
 LABEL description="Wazuh Docker Agent"
 ENV JOIN_MANAGER_MASTER_HOST=""
 ENV JOIN_MANAGER_WORKER_HOST=""
@@ -26,6 +26,7 @@ COPY . /var/ossec/
 WORKDIR /var/ossec/
 RUN pip3 --no-cache-dir install -r /var/ossec/requirements.txt && \
   rm -rf /var/ossec/requirements.txt && \
+  chmod +x /var/ossec/deregister_agent.py && \
   chmod +x /var/ossec/register_agent.py && \
   apt-get remove --purge -y python3-dev gcc && \
   apt-get clean autoclean && \
