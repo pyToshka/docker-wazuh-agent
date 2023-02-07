@@ -22,10 +22,10 @@ spec:
           httpGet:
             path: /healz
             port: 5000
-          initialDelaySeconds: 20
+          initialDelaySeconds: 40
           periodSeconds: 10
           timeoutSeconds: 10
-          failureThreshold: 3
+          failureThreshold: 5
         ports:
           - name: agent-http
             containerPort: 5000
@@ -43,14 +43,12 @@ spec:
           value: "wazuh-workers.wazuh.svc.cluster.local"
         - name: JOIN_MANAGER_PROTOCOL
           value: "https"
-        - name: FLASK_BIND
-          value: "0.0.0.0"
         - name: NODE_NAME
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
         - name: WAZUH_GROUPS
-          value: default
+          value: "demo"
         - name: JOIN_MANAGER_USER
           valueFrom:
            secretKeyRef:
@@ -65,8 +63,6 @@ spec:
           value: "55000"
         - name: JOIN_MANAGER_PORT
           value: "1514"
-        - name: HEALTH_CHECK_PROCESSES
-          value: "ossec-execd,ossec-syscheckd,ossec-logcollector,wazuh-modulesd,ossec-authd"
         volumeMounts:
         - mountPath: /var/run
           name: var-run

@@ -1,14 +1,9 @@
 import json
 import os
 import sys
-from subprocess import PIPE, Popen  # nosec
-
-import psutil
-import urllib3
 from base64 import b64encode
-from flask import Flask
-from healthcheck import HealthCheck, EnvironmentDump
-from jinja2 import Template
+
+import urllib3
 from loguru import logger
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -55,17 +50,23 @@ def req(method, resource, data=None):
         res_json = r.json()
 
     except Exception as exception:
-        logger.error(f"Error: {resource}")
+        logger.error(f"Error: {resource} {exception}")
         sys.exit(1)
 
     return code, res_json
 
 
-def cleanup_agent(older_than):
-    status_code, response = req("delete",
-                                f"agents?pretty=true&older_than={older_than}&agents_list=all&status=never_connected,disconnected")
+def cleanup_agent(older):
+    status_code, response = req(
+        "delete",
+        f"agents?pretty=true&older_than={older}&agents_list=all&status=never_connected,"
+        f"disconnected",
+    )
     for items in response["data"]["affected_items"]:
-        status_code, response = req("delete", f"agents?pretty=true&older_than=0s&agents_list={items['id']}&status=all")
+        status_code, response = req(
+            "delete",
+            f"agents?pretty=true&older_than=0s&agents_list={items['id']}&status=all",
+        )
         msg = json.dumps(response, indent=4, sort_keys=True)
         code = f"Status: {status_code} - {code_desc(status_code)}"
         logger.error(f"INFO - DELETE AGENT:\n{code}\n{msg}")
@@ -81,6 +82,7 @@ if __name__ == "__main__":
         node_name = os.environ.get("NODE_NAME")
         older_than = os.environ.get("OLDER_THAN")
         login_endpoint = "security/user/authenticate"
+        verify = False
         base_url = f"{protocol}://{host}:{port}"
         login_url = f"{protocol}://{host}:{port}/{login_endpoint}"
         auth = f"{user}:{password}".encode()

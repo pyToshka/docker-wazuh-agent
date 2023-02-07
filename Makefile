@@ -1,4 +1,4 @@
-VERSION ?= v4.0.4
+VERSION ?= v4.3.10
 
 all: docker
 
@@ -12,3 +12,6 @@ docker-run:
 docker-push:
 	docker push kennyopennix/wazuh-agent:latest && \
 	docker push kennyopennix/wazuh-agent:$(VERSION)
+
+docker-buildx:
+	docker buildx build --push -t kennyopennix/wazuh-agent:$(VERSION) --cache-to type=local,dest=./tmp/ --cache-from type=local,src=./tmp/ .

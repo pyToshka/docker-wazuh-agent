@@ -8,42 +8,34 @@ solution for threat detection, integrity monitoring, incident response and compl
 
 Wazuh Agent as Docker Image with auto registration on Wazuh server.
 
-As well as local docker You can deploy the image to Kubernetes as DaemonSet.
+Current implementation could be run as standalone docker container as well as Kubernete DaemonSet
 
-Current agent version is `4.3.9`
+ Agent version is `v4.3.10`
+
+
 
 ## Structure
 
-`register_agent.py` - Simple script for auto register docker based agent
+`register_agent.py` - Auto register docker based agent
 
 `cleanup_agents.py` - Cleanup disconnected or never connected agents older than n days
 
-`deregister_agent.py` - Simple de-registration of agent
+`deregister_agent.py` -  De-registration of agent
 
 ## Environments
 
-`JOIN_MANAGER_PROTOCOL` - http or https, default `https`
-
-`JOIN_MANAGER_MASTER_HOST` - Ip address or Domain name of Wazuh server
-
-`JOIN_MANAGER_WORKER_HOST` - Ip address or Domain name of Wazuh worker
-
-`JOIN_MANAGER_USER` - Username for authorization on Wazuh server
-
-`JOIN_MANAGER_PASSWORD` - Password for authorization
-
-`JOIN_MANAGER_API_PORT` - Wazuh server api port, default `55000`
-
-`JOIN_MANAGER_PORT` - Wazuh server port for communication between agent and server,
-defaul `1514`
-
-`NODE_NAME` - Node name if not present image will use `HOSTNAME` system variable
-
-`HEALTH_CHECK_PROCESSES` - process list for health checks determinate by comma
-
-`VIRUS_TOTAL_KEY` - Api key for VirusTotal integration
-
-`FLASK_DEBUG` - Switch on Flask debug, default `0`
+| Name                       | Type     | Description                                                  | Default   | Required |
+| -------------------------- | -------- | ------------------------------------------------------------ | --------- | -------- |
+| `JOIN_MANAGER_PROTOCOL`    | `string` | Http or https protocol for Wazuh restapi connection          | `https`   | `Yes`    |
+| `JOIN_MANAGER_MASTER_HOST` | `string` | Ip address or Domain name of Wazuh server using for restapi calls | `None`    | `Yes`    |
+| `JOIN_MANAGER_WORKER_HOST` | `string` | Ip address or Domain name of Wazuh worker for agent connection, if using ALL in One installation the same value as for `JOIN_MANAGER_MASTER_HOST` | `None`    | `Yes`    |
+| `JOIN_MANAGER_USER`        | `string` | Username for Wazuh API autorization                          | `None`    | `Yes`    |
+| `JOIN_MANAGER_PASSWORD`    | `string` | Password for Wazuh API autorization                          | `None`    | `Yes`    |
+| `JOIN_MANAGER_API_PORT`    | `string` | Port where the Wazuh API listened                            | `55000`   | `Yes`    |
+| `JOIN_MANAGER_PORT`        | `string` | Wazuh server port for communication between agent and server | `1514`    | `Yes`    |
+| `NODE_NAME`                | `string` | Node name if not present image will use `HOSTNAME` system variable | `None`    | `No`     |
+| `VIRUS_TOTAL_KEY`          | `string` | Api key for VirusTotal integration                           | `None`    | `No`     |
+| `WAZUH_GROUPS`             | `string` | Group(s) name comma separated for auto adding agent,         | `default` | `No`     |
 
 ## Run as docker image
 
@@ -82,8 +74,6 @@ env:
       valueFrom:
         fieldRef:
           fieldPath: spec.nodeName
-    - name: WAZUH_GROUPS
-      value: default
     - name: JOIN_MANAGER_USER
       valueFrom:
        secretKeyRef:
@@ -98,8 +88,6 @@ env:
       value: "55000"
     - name: JOIN_MANAGER_PORT
       value: "1514"
-    - name: HEALTH_CHECK_PROCESSES
-      value: "ossec-execd,ossec-syscheckd,ossec-logcollector,wazuh-modulesd,ossec-authd"
 
 ```
 

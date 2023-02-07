@@ -11,13 +11,18 @@
     <auto_restart>yes</auto_restart>
     <crypto_method>aes</crypto_method>
   </client>
-
   <auth>
-    <use_password>yes</use_password>
+    <disabled>no</disabled>
+    <remote_enrollment>yes</remote_enrollment>
+    <port>{{ join_manager_port | default('1514', true) }}</port>
     <use_source_ip>no</use_source_ip>
-    <force_insert>yes</force_insert>
-    <force_time>0</force_time>
-    <purge>yes</purge>
+    <force>
+        <enabled>yes</enabled>
+        <disconnected_time enabled="no">0</disconnected_time>
+        <after_registration_time>0</after_registration_time>
+        <key_mismatch>yes</key_mismatch>
+        <purge>yes</purge>
+    </force>
   </auth>
 
   <client_buffer>
@@ -109,28 +114,6 @@
     <interval>12h</interval>
     <skip_nfs>yes</skip_nfs>
   </sca>
-  <vulnerability-detector>
-    <enabled>yes</enabled>
-    <interval>5m</interval>
-    <run_on_start>yes</run_on_start>
-    <provider name="canonical">
-        <enabled>yes</enabled>
-        <update_interval>1h</update_interval>
-    </provider>
-    <provider name="nvd">
-        <enabled>yes</enabled>
-        <update_from_year>2010</update_from_year>
-        <update_interval>1h</update_interval>
-    </provider>
-    <provider name="debian">
-        <enabled>yes</enabled>
-        <update_interval>1h</update_interval>
-    </provider>
-    <provider name="redhat">
-        <enabled>yes</enabled>
-        <update_interval>1h</update_interval>
-    </provider>
-  </vulnerability-detector>
   <!-- File integrity monitoring -->
   <syscheck>
     <disabled>no</disabled>
