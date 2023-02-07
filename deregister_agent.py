@@ -1,14 +1,9 @@
 import json
 import os
 import sys
-from subprocess import PIPE, Popen  # nosec
-
-import psutil
-import urllib3
 from base64 import b64encode
-from flask import Flask
-from healthcheck import HealthCheck, EnvironmentDump
-from jinja2 import Template
+
+import urllib3
 from loguru import logger
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -53,7 +48,7 @@ def req(method, resource, data=None):
         res_json = r.json()
 
     except Exception as exception:
-        logger.error(f"Error: {resource}")
+        logger.error(f"Error: {resource} {exception}")
         sys.exit(1)
 
     return code, res_json
@@ -62,14 +57,22 @@ def req(method, resource, data=None):
 def delete_agent(agt_name):
     status_code, response = req("get", f"agents?pretty=true&q=name={agt_name}")
     for items in response["data"]["affected_items"]:
-        status_code, response = req("delete", f"agents?pretty=true&older_than=0s&agents_list={items['id']}&status=all")
+        status_code, response = req(
+            "delete",
+            f"agents?pretty=true&older_than=0s&agents_list={items['id']}&status=all",
+        )
         msg = json.dumps(response, indent=4, sort_keys=True)
         code = f"Status: {status_code} - {code_desc(status_code)}"
         logger.error(f"INFO - DELETE AGENT:\n{code}\n{msg}")
-    status_code, response = req("delete",
-                                "agents?pretty=true&older_than=21d&agents_list=all&status=never_connected,disconnected")
+    status_code, response = req(
+        "delete",
+        "agents?pretty=true&older_than=21d&agents_list=all&status=never_connected,disconnected",
+    )
     for items in response["data"]["affected_items"]:
-        status_code, response = req("delete", f"agents?pretty=true&older_than=0s&agents_list={items['id']}&status=all")
+        status_code, response = req(
+            "delete",
+            f"agents?pretty=true&older_than=0s&agents_list={items['id']}&status=all",
+        )
         msg = json.dumps(response, indent=4, sort_keys=True)
         code = f"Status: {status_code} - {code_desc(status_code)}"
         logger.error(f"INFO - DELETE AGENT:\n{code}\n{msg}")

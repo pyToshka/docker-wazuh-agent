@@ -10,3 +10,4 @@ src/
 register_agent.py__
 test.py
 docker-compose.yaml
+tmp/
