@@ -29,13 +29,14 @@ RUN install_packages \
 COPY *.py *.jinja2  /var/ossec/
 WORKDIR /var/ossec/
 COPY --from=builder /tmp/wheel /tmp/wheel
-RUN adduser wazuh && \
-  pip3 install --no-index /tmp/wheel/*.whl && \
+RUN pip3 install --no-index /tmp/wheel/*.whl && \
   chmod +x /var/ossec/deregister_agent.py && \
   chmod +x /var/ossec/register_agent.py && \
   apt-get clean autoclean && \
   apt-get autoremove -y && \
   rm -rf /var/lib/{apt,dpkg,cache,log}/ && \
-  rm -rf  /tmp/* /var/tmp/* /var/log/*
+  rm -rf  /tmp/* /var/tmp/* /var/log/* && \
+  chown -R wazuh:wazuh /var/ossec/
 EXPOSE 5000
+USER wazuh
 ENTRYPOINT ["./register_agent.py"]
