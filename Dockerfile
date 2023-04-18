@@ -29,7 +29,9 @@ RUN install_packages \
 COPY *.py *.jinja2  /var/ossec/
 WORKDIR /var/ossec/
 COPY --from=builder /tmp/wheel /tmp/wheel
-RUN pip3 install --no-index /tmp/wheel/*.whl && \
+RUN addgroup wazuh && \
+  adduser wazuh && \
+  pip3 install --no-index /tmp/wheel/*.whl && \
   chmod +x /var/ossec/deregister_agent.py && \
   chmod +x /var/ossec/register_agent.py && \
   apt-get clean autoclean && \
