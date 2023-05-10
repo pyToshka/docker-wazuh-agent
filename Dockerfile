@@ -22,7 +22,7 @@ RUN install_packages \
   curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - && \
   echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list && \
   install_packages wazuh-agent=${AGENT_VERSION}  && \
-  echo "deb http://security.debian.org/debian-security stretch/updates main" >> /etc/apt/sources.list && \
+  echo "deb http://security.debian.org/ stretch/updates main contrib non-free" >> /etc/apt/sources.list && \
   mkdir -p /usr/share/man/man1 && \
   install_packages openjdk-8-jdk
 
