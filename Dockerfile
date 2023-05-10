@@ -38,5 +38,4 @@ RUN pip3 install --no-index /tmp/wheel/*.whl && \
   rm -rf  /tmp/* /var/tmp/* /var/log/* && \
   chown -R wazuh:wazuh /var/ossec/
 EXPOSE 5000
-USER wazuh
 ENTRYPOINT ["./register_agent.py"]
