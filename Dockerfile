@@ -24,7 +24,7 @@ RUN install_packages \
   install_packages wazuh-agent=${AGENT_VERSION}  && \
   echo "deb http://deb.debian.org/debian-security/ bullseye-security main contrib non-free" >> /etc/apt/sources.list && \
   mkdir -p /usr/share/man/man1 && \
-  install_packages openjdk-8-jdk
+  install_packages openjdk-11-jdk
 
 COPY *.py *.jinja2  /var/ossec/
 WORKDIR /var/ossec/
