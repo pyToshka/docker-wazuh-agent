@@ -163,11 +163,6 @@ def add_agent(agt_name, agt_ip=None):
             {
                 "name": agt_name,
                 "ip": agt_ip,
-                "force": {
-                    "enabled": True,
-                    "disconnected_time": {"enabled": False, "value": "0"},
-                    "after_registration_time": "1s",
-                },
             },
         )
     else:
@@ -176,11 +171,6 @@ def add_agent(agt_name, agt_ip=None):
             "agents/insert",
             {
                 "name": str(agt_name),
-                "force": {
-                    "enabled": True,
-                    "disconnected_time": {"enabled": False, "value": "0"},
-                    "after_registration_time": "1s",
-                },
             },
         )
     response_msg = http_codes_serializer(response=response, status_code=status_code)
@@ -218,7 +208,6 @@ def wazuh_agent_status(agt_name, pretty=None):
         return wazuh_agnt_name, wazuh_agnt_status
     else:
         logger.error(f"Unable to get Wazuh agent status: {response_msg}")
-
 
 def wazuh_agent_import_key(wazuh_agent_key):
     cmd = "/var/ossec/bin/manage_agents"
@@ -286,9 +275,18 @@ if __name__ == "__main__":
     auth = f"{user}:{password}".encode()
     verify = False
     create_config_file()
-    agent_id, agent_key = add_agent(node_name)
-    wazuh_agent_import_key(agent_key.encode())
-    restart_wazuh_agent()
+    agent_name, agent_status = wazuh_agent_status(node_name)
+    if agent_status:
+        restart_wazuh_agent()
+    else:
+        agent_id, agent_key = add_agent(node_name)
+        wazuh_agent_import_key(agent_key.encode())
+        restart_wazuh_agent()
+        if groups == "default":
+            pass
+        else:
+            for group in list(groups.split(",")):
+                add_agent_to_group(agent_id, group)
     status = True
     while status:
         agent_name, agent_status = wazuh_agent_status(node_name)
@@ -304,11 +302,6 @@ if __name__ == "__main__":
             logger.info(
                 f"Waiting for Wazuh agent {agent_name} become ready current status is {agent_status}......"
             )
-    if groups == "default":
-        pass
-    else:
-        for group in list(groups.split(",")):
-            add_agent_to_group(agent_id, group)
     logger.info("Listening on 0.0.0.0:5000")
     server = HTTPServer(("0.0.0.0", 5000), RequestHandler)
     server.serve_forever()
