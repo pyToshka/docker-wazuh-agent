@@ -12,6 +12,7 @@ from healthcheck import HealthCheck
 from jinja2 import Template
 from loguru import logger
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import time
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 try:
@@ -304,6 +305,7 @@ if __name__ == "__main__":
             logger.info(
                 f"Waiting for Wazuh agent {agent_name} become ready current status is {agent_status}......"
             )
+            time.sleep(10)
     if groups == "default":
         pass
     else:
