@@ -25,6 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        repositories: ["kennyopennix/wazuh-agent", "kennyopennix/wazuh-agent-amazonlinux", "kennyopennix/wazuh-agent-ubuntu"]
         include:
           - dockerfile: ./Dockerfile
             image: kennyopennix/wazuh-agent
@@ -61,31 +62,15 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          sername: ${{ secrets.DOCKERHUB_USERNAME }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Update repo description Wazuh agent minideb description
+      - name: Update repo description
         uses: peter-evans/dockerhub-description@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: kennyopennix/wazuh-agent
-
-      - name: Update repo description Wazuh agent amazonlinux description
-        uses: peter-evans/dockerhub-description@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: kennyopennix/wazuh-agent-amazonlinux
-      - name: Update repo description Wazuh agent ubuntu  description
-        uses: peter-evans/dockerhub-description@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: kennyopennix/wazuh-agent-amazonlinux
+          repository: ${{ matrix.repositories }}
