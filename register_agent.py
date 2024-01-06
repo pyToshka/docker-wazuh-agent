@@ -12,6 +12,7 @@ from healthcheck import HealthCheck
 from jinja2 import Template
 from loguru import logger
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import time
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 try:
@@ -277,6 +278,7 @@ if __name__ == "__main__":
     join_manager_worker = os.environ.get(
         "JOIN_MANAGER_WORKER_HOST", default="wazuh-workers.wazuh.svc.cluster.local"
     )
+    wait_time = os.environ.get("WAZUH_WAIT_TIME", default="10")
     flask_bind = os.environ.get("FLASK_BIND", default="0.0.0.0")
     if not node_name:
         node_name = os.environ.get("HOSTNAME")
@@ -304,6 +306,7 @@ if __name__ == "__main__":
             logger.info(
                 f"Waiting for Wazuh agent {agent_name} become ready current status is {agent_status}......"
             )
+            time.sleep(int(wait_time))
     if groups == "default":
         pass
     else:
