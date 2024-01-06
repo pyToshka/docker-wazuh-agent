@@ -6,7 +6,7 @@ import os
 
 root_dir = os.path.abspath(os.curdir)
 base_image = os.getenv("IMAGE_NAME", "wazuh-agent-amazonlinux:testinfra")
-docker_file = os.getenv("DOCKERFILE", f"images/Dockerfie.amazonlinux")
+docker_file = os.getenv("DOCKERFILE", "images/Dockerfie.amazonlinux")
 
 
 @pytest.fixture(scope="session")
