@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
     -   id: check-yaml
     -   id: end-of-file-fixer
@@ -37,7 +37,7 @@ repos:
     - id: shellcheck
     - id: shfmt
 - repo: https://github.com/jorisroovers/gitlint
-  rev: 'v0.19.0dev'
+  rev: 'v0.19.1'
   hooks:
   - id: gitlint
 - repo: local
@@ -49,6 +49,6 @@ repos:
     entry: flake8
     types: [python]
 - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
-  rev: 'v1.3.1'
+  rev: 'v1.3.2'
   hooks:
   - id: python-safety-dependencies-check

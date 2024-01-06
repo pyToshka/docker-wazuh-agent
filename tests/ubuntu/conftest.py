@@ -6,7 +6,7 @@ import os
 
 root_dir = os.path.abspath(os.curdir)
 base_image = os.getenv("IMAGE_NAME", "wazuh-agent-ubuntu:testinfra")
-docker_file = os.getenv("DOCKERFILE", f"images/Dockerfie.ubuntu")
+docker_file = os.getenv("DOCKERFILE", "images/Dockerfie.ubuntu")
 
 
 @pytest.fixture(scope="session")
