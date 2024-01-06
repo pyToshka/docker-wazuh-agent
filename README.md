@@ -1,4 +1,3 @@
-
 # docker-wazuh-agent
 
 Wazuh is a free, open source and enterprise-ready security monitoring
@@ -8,34 +7,43 @@ solution for threat detection, integrity monitoring, incident response and compl
 
 Wazuh Agent as Docker Image with auto registration on Wazuh server.
 
-Current implementation could be run as standalone docker container as well as Kubernete DaemonSet
+Current implementation could be run as standalone docker container as well as Kubernetes DaemonSet
 
- Agent version is `v4.3.10`
+Agent version is `v4.3.10`
 
+## DockerHub images
+
+| Repository Name                                               | Description                                                 | Pull command                                     |
+|---------------------------------------------------------------|-------------------------------------------------------------|--------------------------------------------------|
+| https://hub.docker.com/r/kennyopennix/wazuh-agent             | Wazuh agent based on Minideb                                | docker pull kennyopennix/wazuh-agent             |
+| https://hub.docker.com/r/kennyopennix/wazuh-agent-amazonlinux | Wazuh agent based on Amazon Linux version 2023.3.20231218.0 | docker pull kennyopennix/wazuh-agent-amazonlinux |
+| https://hub.docker.com/r/kennyopennix/wazuh-agent-ubuntu      | Wazuh agent based on Ubuntu 24.04                           | docker pull kennyopennix/wazuh-agent-ubuntu      |
+|                                                               |                                                             |                                                  |
 
 
 ## Structure
 
 `register_agent.py` - Auto register docker based agent
 
-`cleanup_agents.py` - Cleanup disconnected or never connected agents older than n days
+`cleanup_agents.py` - Cleanup disconnected or never connected agents older than N days
 
 `deregister_agent.py` -  De-registration of agent
 
 ## Environments
 
-| Name                       | Type     | Description                                                  | Default   | Required |
-| -------------------------- | -------- | ------------------------------------------------------------ | --------- | -------- |
-| `JOIN_MANAGER_PROTOCOL`    | `string` | Http or https protocol for Wazuh restapi connection          | `https`   | `Yes`    |
-| `JOIN_MANAGER_MASTER_HOST` | `string` | Ip address or Domain name of Wazuh server using for restapi calls | `None`    | `Yes`    |
+| Name                       | Type     | Description                                                                                                                                       | Default   | Required |
+|----------------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------|-----------|----------|
+| `JOIN_MANAGER_PROTOCOL`    | `string` | Http or https protocol for Wazuh restapi connection                                                                                               | `https`   | `Yes`    |
+| `JOIN_MANAGER_MASTER_HOST` | `string` | Ip address or Domain name of Wazuh server using for restapi calls                                                                                 | `None`    | `Yes`    |
 | `JOIN_MANAGER_WORKER_HOST` | `string` | Ip address or Domain name of Wazuh worker for agent connection, if using ALL in One installation the same value as for `JOIN_MANAGER_MASTER_HOST` | `None`    | `Yes`    |
-| `JOIN_MANAGER_USER`        | `string` | Username for Wazuh API autorization                          | `None`    | `Yes`    |
-| `JOIN_MANAGER_PASSWORD`    | `string` | Password for Wazuh API autorization                          | `None`    | `Yes`    |
-| `JOIN_MANAGER_API_PORT`    | `string` | Port where the Wazuh API listened                            | `55000`   | `Yes`    |
-| `JOIN_MANAGER_PORT`        | `string` | Wazuh server port for communication between agent and server | `1514`    | `Yes`    |
-| `NODE_NAME`                | `string` | Node name if not present image will use `HOSTNAME` system variable | `None`    | `No`     |
-| `VIRUS_TOTAL_KEY`          | `string` | Api key for VirusTotal integration                           | `None`    | `No`     |
-| `WAZUH_GROUPS`             | `string` | Group(s) name comma separated for auto adding agent,         | `default` | `No`     |
+| `JOIN_MANAGER_USER`        | `string` | Username for Wazuh API autorization                                                                                                               | `None`    | `Yes`    |
+| `JOIN_MANAGER_PASSWORD`    | `string` | Password for Wazuh API autorization                                                                                                               | `None`    | `Yes`    |
+| `JOIN_MANAGER_API_PORT`    | `string` | Port where the Wazuh API listened                                                                                                                 | `55000`   | `Yes`    |
+| `JOIN_MANAGER_PORT`        | `string` | Wazuh server port for communication between agent and server                                                                                      | `1514`    | `Yes`    |
+| `NODE_NAME`                | `string` | Node name if not present image will use `HOSTNAME` system variable                                                                                | `None`    | `No`     |
+| `VIRUS_TOTAL_KEY`          | `string` | Api key for VirusTotal integration                                                                                                                | `None`    | `No`     |
+| `WAZUH_GROUPS`             | `string` | Group(s) name comma separated for auto adding agent,                                                                                              | `default` | `No`     |
+| `WAZUH_WAIT_TIME`          | `string` | Sleep for N second                                                                                                                                | `10`      | `No`     |
 
 ## Run as docker image
 
@@ -44,8 +52,15 @@ The Simplest way of running the container
 ```shell
 docker run --rm kennyopennix/wazuh-agent:latest
 ```
+## Run docker-compose
 
-Advanced usage
+```shell
+docker compose up -d 
+```
+
+Will run Wazuh cluster in single node mode and 3 agents
+
+## Advanced usage
 
 ```bash
 docker run -d --name wazuh -v /:/rootfs:ro --net host --hostname ${HOSTNAME} \
