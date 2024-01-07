@@ -6,7 +6,7 @@ docker-compose.yaml
 tmp/
 .git/
 .github
-images
+images/Dockerfie.*
 tests
 .pytest_cache
 .tfcache
