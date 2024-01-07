@@ -53,6 +53,12 @@ The Simplest way of running the container
 docker run --rm kennyopennix/wazuh-agent:latest
 ```
 ## Run docker-compose
+Generate certificates
+```shell
+docker compose -f tests/single-node/generate-indexer-certs.yml run --rm generator
+```
+
+Run
 
 ```shell
 docker compose up -d

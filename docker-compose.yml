@@ -1,11 +1,13 @@
 # Wazuh App Copyright (C) 2017, Wazuh Inc. (License GPLv2)
-version: '3.7'
+version: '3.9'  # optional since Compose v1.27.0
 services:
   wazuh-minideb.agent:
     build:
       context: .
       dockerfile: ./Dockerfile
     image: wazuh-agent:minideb
+    hostname: wazuh-agent-minideb
+    restart: always
     environment:
       - JOIN_MANAGER_MASTER_HOST=wazuh.manager
       - JOIN_MANAGER_WORKER_HOST=wazuh.manager
@@ -13,30 +15,61 @@ services:
       - JOIN_MANAGER_PASSWORD=MyS3cr37P450r.*-
     depends_on:
         - wazuh.manager
+        - wazuh.indexer
+    links:
+      - wazuh.indexer:wazuh.indexer
+      - wazuh.manager:wazuh.manager
+    healthcheck:
+      test: curl -k --silent https://wazuh.indexer:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      interval: 30s
+      timeout: 10s
+      retries: 10
   wazuh-amazonlinux.agent:
     build:
       context: .
       dockerfile: ./images/Dockerfie.amazonlinux
     image: wazuh-agent:amazonlinux
+    restart: always
+    hostname: wazuh-agent-amazonlinux
     environment:
       - JOIN_MANAGER_MASTER_HOST=wazuh.manager
       - JOIN_MANAGER_WORKER_HOST=wazuh.manager
       - JOIN_MANAGER_USER=wazuh-wui
-      - JOIN_MANAGER_PASSWORD=qMyS3cr37P450r.*-
+      - JOIN_MANAGER_PASSWORD=MyS3cr37P450r.*-
+    links:
+      - wazuh.indexer:wazuh.indexer
+      - wazuh.manager:wazuh.manager
     depends_on:
         - wazuh.manager
+        - wazuh.indexer
+    healthcheck:
+      test: curl -k --silent https://wazuh.indexer:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      interval: 30s
+      timeout: 10s
+      retries: 10
   wazuh-ubuntu.agent:
     build:
       context: .
       dockerfile: ./images/Dockerfie.ubuntu
     image: wazuh-agent:ubuntu
+    hostname: wazuh-agent-ubuntu
+    restart: always
     environment:
       - JOIN_MANAGER_MASTER_HOST=wazuh.manager
       - JOIN_MANAGER_WORKER_HOST=wazuh.manager
       - JOIN_MANAGER_USER=wazuh-wui
-      - JOIN_MANAGER_PASSWORD=qMyS3cr37P450r.*-
+      - JOIN_MANAGER_PASSWORD=MyS3cr37P450r.*-
+    links:
+      - wazuh.indexer:wazuh.indexer
+      - wazuh.manager:wazuh.manager
     depends_on:
         - wazuh.manager
+        - wazuh.indexer
+    healthcheck:
+      test: curl -k --silent https://wazuh.indexer:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      interval: 30s
+      timeout: 10s
+      retries: 10
   wazuh.manager:
     image: wazuh/wazuh-manager:4.7.0
     hostname: wazuh.manager

@@ -15,3 +15,5 @@ docker-push:
 
 docker-buildx:
 	docker buildx build --push -t kennyopennix/wazuh-agent:$(VERSION) --cache-to type=local,dest=./tmp/ --cache-from type=local,src=./tmp/ .
+
+run-local:
