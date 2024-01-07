@@ -43,7 +43,7 @@ jobs:
       run: |
         pytest  -v --capture=sys -x --tb=long
   docker-compose-tests:
-    needs: Test with pytest
+    needs: "pyunit-tests"
     runs-on: ubuntu-latest
     steps:
     - name: Install dependencies
