@@ -89,6 +89,9 @@ def wazuh_api(method, resource, data=None):
         "Authorization": f"Basic {b64encode(auth).decode()}",
     }
     response = requests.get(login_url, headers=login_headers, verify=False)  # nosec
+    logger.info(
+        f"Response code {response.status_code} response content {response.content}"
+    )
     token = json.loads(response.content.decode())["data"]["token"]
     requests_headers = {
         "Content-Type": "application/json",

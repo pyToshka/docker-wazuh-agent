@@ -5,7 +5,7 @@ import subprocess
 import os
 
 root_dir = os.path.abspath(os.curdir)
-base_image = os.getenv("IMAGE_NAME", "wazuh-agent-minideb:testinfra")
+base_image = os.getenv("IMAGE_NAME", "wazuh-agent:minideb")
 docker_file = os.getenv("DOCKERFILE", "Dockerfile")
 
 
