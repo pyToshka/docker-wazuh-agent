@@ -38,8 +38,6 @@ jobs:
         run: snyk code test --sarif --severity-threshold=high > snyk-code.sarif # || true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
 
       - name: Build a Docker image
         continue-on-error: true
