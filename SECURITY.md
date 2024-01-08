@@ -2,12 +2,11 @@
 
 OpenNix takes the security of our software products and services seriously, which includes all source code repositories managed through our GitHub organizations.
 
-
 ## Reporting Security Issues
 
-**Please do not report security vulnerabilities through public GitHub issues.** Instead, please report them to the OpenNix at [support@opennix.ru](mailto:support@opennix.ru).  
+**Please do not report security vulnerabilities through public GitHub issues.** Instead, please report them to the OpenNix at [support@opennix.ru](mailto:support@opennix.ru).
 
-You should receive a response within 24 hours. If for some reason you do not, please follow up via email to ensure we received your original message. 
+You should receive a response within 24 hours. If for some reason you do not, please follow up via email to ensure we received your original message.
 
 Please include the requested information listed below (as much as you can provide) to help us better understand the nature and scope of the possible issue:
 
@@ -20,7 +19,7 @@ Please include the requested information listed below (as much as you can provid
   * Impact of the issue, including how an attacker might exploit the issue
 
 This information will help us triage your report more quickly.
- 
+
 ## Preferred Languages
 
 We prefer all communications to be in English or Russian.
