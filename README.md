@@ -1,5 +1,7 @@
 # docker-wazuh-agent
 
+<a href="https://www.buymeacoffee.com/pyToshka" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+
 Wazuh is a free, open source and enterprise-ready security monitoring
 solution for threat detection, integrity monitoring, incident response and compliance.
 
@@ -120,6 +122,3 @@ DaemonSet will deploy to wazuh namespace.
 ```bash
 docker build . -t wazuh-agent:latest
 ```
-## Support project
-
-<a href="https://www.buymeacoffee.com/pyToshka" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
