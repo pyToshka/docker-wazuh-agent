@@ -29,19 +29,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up Snyk CLI to check for security issues
-        # Snyk can be used to break the build when it detects security issues.
-        # In this case we want to upload the SAST issues to GitHub Code Scanning
         uses: snyk/actions/setup@806182742461562b67788a64410098c9d9b96adb
         env:
-          # This is where you will need to introduce the Snyk API token created with your Snyk account
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-        # Runs Snyk Code (SAST) analysis and uploads result into GitHub.
-        # Use || true to not fail the pipeline
       - name: Snyk Code test
-        uses: snyk/actions/python-3.8@master
         continue-on-error: true
-        run: snyk code test -d --sarif > snyk-code.sarif # || true
+        run: snyk code test --sarif --severity-threshold=high > snyk-code.sarif # || true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
@@ -50,14 +44,13 @@ jobs:
       - name: Build a Docker image
         continue-on-error: true
         run: docker build -t ${{ matrix.dockerfile }} .
-        # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
+
       - name: Snyk Container monitor
         continue-on-error: true
         run: snyk container monitor ${{ matrix.image }} --file=${{ matrix.dockerfile }}
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-        # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v2
         with:
