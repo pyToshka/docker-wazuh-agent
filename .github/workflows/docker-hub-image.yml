@@ -83,6 +83,6 @@ jobs:
         with:
           context: .
           file: ${{ matrix.dockerfile }}
-          push: ${{ ! startsWith(github.ref, 'refs/tags/') }} && github.event_name != 'pull_request'
+          push: ${{ ! startsWith(github.ref, 'refs/tags/') }}
           tags: ${{ steps.meta-tag.outputs.tags }}
           labels: ${{ steps.meta-tag.outputs.labels }}
