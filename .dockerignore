@@ -10,3 +10,4 @@ images/Dockerfie.*
 tests
 .pytest_cache
 .tfcache
+ .dccache
