@@ -41,7 +41,7 @@ jobs:
 
       - name: Build a Docker image
         continue-on-error: true
-        run: docker build -t ${{ matrix.dockerfile }} .
+        run: docker build -t ${{ matrix.image }}  -f ${{ matrix.dockerfile }} .
 
       - name: Snyk Container monitor
         continue-on-error: true
