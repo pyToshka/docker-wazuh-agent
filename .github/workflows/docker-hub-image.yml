@@ -32,6 +32,12 @@ jobs:
             image: kennyopennix/wazuh-agent-amazonlinux
           - dockerfile: ./images/Dockerfie.ubuntu
             image: kennyopennix/wazuh-agent-ubuntu
+          - dockerfile: ./Dockerfile
+            image: opennix/wazuh-agent
+          - dockerfile: ./images/Dockerfie.amazonlinux
+            image: opennix/wazuh-agent-amazonlinux
+          - dockerfile: ./images/Dockerfie.ubuntu
+            image: opennix/wazuh-agent-ubuntu
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,6 +59,13 @@ jobs:
           images: ${{ matrix.image }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+      - name: Extract metadata (tags, labels) for Docker
+        if: ${{ ! startsWith(github.ref, 'refs/tags/') }} && github.event_name != 'pull_request'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ matrix.image }}
+          tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
