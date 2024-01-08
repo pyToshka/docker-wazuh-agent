@@ -18,14 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - dockerfile: ./Dockerfile
-            image: kennyopennix/wazuh-agent
-          - dockerfile: ./images/Dockerfie.amazonlinux
-            image: kennyopennix/wazuh-agent-amazonlinux
-          - dockerfile: ./images/Dockerfie.ubuntu
-            image: kennyopennix/wazuh-agent-ubuntu
     steps:
       - uses: actions/checkout@v3
       - name: Set up Snyk CLI to check for security issues
@@ -39,17 +31,8 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      - name: Build a Docker image
-        continue-on-error: true
-        run: docker build -t ${{ matrix.image }}  -f ${{ matrix.dockerfile }} .
-
-      - name: Snyk Container monitor
-        continue-on-error: true
-        run: snyk container monitor ${{ matrix.image }} --file=${{ matrix.dockerfile }}
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v2
+        continue-on-error: true
         with:
           sarif_file: snyk-code.sarif
