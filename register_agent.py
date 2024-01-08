@@ -64,7 +64,7 @@ def http_codes_serializer(response, status_code):
 def create_config_file():
     logger.info(f"Create Wazuh agent configuration for node {node_name}")
     with open("ossec.jinja2") as file_:
-        template = Template(file_.read())
+        template = Template(file_.read(), autoescape=True)
         config = template.render(
             join_manager_hostname=join_manager_worker,
             join_manager_port=join_manager_port,
