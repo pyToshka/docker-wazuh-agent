@@ -35,7 +35,7 @@ jobs:
 
       - name: Snyk Code test
         continue-on-error: true
-        run: snyk code test --sarif --severity-threshold=high > snyk-code.sarif # || true
+        run: snyk code test -d --sarif --severity-threshold=high > snyk-code.sarif # || true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
