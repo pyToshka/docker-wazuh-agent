@@ -10,8 +10,6 @@ on:
   push:
     branches:
       - 'main'
-    tags:
-      - 'v*.*.*'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -52,7 +50,7 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       - name: Extract metadata (tags, labels) for Docker
-        if: github.ref == 'refs/heads/main'
+        if: github.event_name != 'pull_request'
         continue-on-error: true
         id: meta
         uses: docker/metadata-action@v5
@@ -60,32 +58,12 @@ jobs:
           images: ${{ matrix.image }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-      - name: Extract metadata (tags, labels) for Docker
-        if: github.ref_type == 'tag' || github.event_name != 'pull_request'
-        continue-on-error: true
-        id: meta-tag
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ matrix.image }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
       - name: Build and push
         uses: docker/build-push-action@v5
         continue-on-error: true
         with:
           context: .
           file: ${{ matrix.dockerfile }}
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      - name: Build and push tags
-        uses: docker/build-push-action@v5
-        continue-on-error: true
-        with:
-          context: .
-          file: ${{ matrix.dockerfile }}
-          push: ${{ github.ref_type == 'tag' }}
-          tags: ${{ steps.meta-tag.outputs.tags }}
-          labels: ${{ steps.meta-tag.outputs.labels }}
