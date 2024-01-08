@@ -47,12 +47,16 @@ jobs:
         # Use || true to not fail the pipeline
       - name: Snyk Code test
         run: snyk code test -d --sarif > snyk-code.sarif # || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       - name: Build a Docker image
         run: docker build -t ${{ matrix.dockerfile }} .
         # Runs Snyk Container (Container and SCA) analysis and uploads result to Snyk.
       - name: Snyk Container monitor
         run: snyk container monitor ${{ matrix.image }} --file=${{ matrix.dockerfile }}
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
         # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning

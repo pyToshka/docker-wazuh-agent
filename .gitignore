@@ -12,3 +12,4 @@ test.py
 docker-compose.yaml
 tmp/
 wazuh_indexer_ssl_certs
+snyk-code.sarif
