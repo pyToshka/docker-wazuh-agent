@@ -55,6 +55,7 @@ The Simplest way of running the container
 docker run --rm kennyopennix/wazuh-agent:latest
 ```
 ## Run docker-compose
+
 Generate certificates
 ```shell
 docker compose -f tests/single-node/generate-indexer-certs.yml run --rm generator
@@ -68,6 +69,20 @@ docker compose up -d
 
 Will run Wazuh cluster in single node mode and 3 agents
 
+## Use Makefile
+```shell
+make
+help                           Help for usage
+build-minideb                  Build Wazuh Agent minideb based
+build-amazon-linux             Build Wazuh Agent amazon linux based
+build-ubuntu                   Build Wazuh Agent ubuntu linux based
+docker-run                     Run Wazuh Agent docker image  minideb based
+docker-push-minideb            Push Wazuh Agent docker image  minideb based
+docker-push-amazon-linux       Push Wazuh Agent docker image amazon linux based
+docker-push-ubuntu             Push Wazuh Agent docker image ubuntu linux based
+run-local                      Run docker compose stack with all agents on board
+
+```
 ## Advanced usage
 
 ```bash
