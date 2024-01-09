@@ -1,15 +1,16 @@
-name: Build and push docker images
+name: Build and push docker images for main branch
 
 # Controls when the workflow will run
 on:
   workflow_run:
     workflows: ["CodeQL"]
-    branches: [main]
+    branches: [main,'release-*']
     types:
       - completed
   push:
     branches:
       - 'main'
+      - 'release-*'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -58,6 +59,9 @@ jobs:
           images: ${{ matrix.image }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
       - name: Build and push
         uses: docker/build-push-action@v5
         continue-on-error: true
