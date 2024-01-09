@@ -58,3 +58,5 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ matrix.image }}:${{ steps.vars.outputs.tag }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+              AGENT_VERSION={{ steps.vars.outputs.tag }}
