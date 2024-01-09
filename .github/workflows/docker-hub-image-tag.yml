@@ -2,8 +2,6 @@ name: Build and push docker images for git tag
 
 # Controls when the workflow will run
 on:
-  workflow_run:
-    workflows: ["CodeQL"]
   push:
     tags:
       - 'v*.*.*'
