@@ -4,9 +4,6 @@ name: Build and push docker images for git tag
 on:
   workflow_run:
     workflows: ["CodeQL"]
-    branches: [main]
-    types:
-      - completed
   push:
     tags:
       - 'v*.*.*'
