@@ -4,8 +4,7 @@ RUN install_packages python3-pip python3-setuptools python3-dev gcc && \
      python3 -m pip wheel -w /tmp/wheel -r /tmp/requirements.txt
 
 FROM bitnami/minideb:bookworm
-LABEL maintainer="medvedev.yp@gmail.com"
-LABEL version="4.3.10"
+LABEL maintainer="support@opennix.ru"
 LABEL description="Wazuh Docker Agent"
 ARG AGENT_VERSION="4.3.10-1"
 ENV JOIN_MANAGER_MASTER_HOST=""

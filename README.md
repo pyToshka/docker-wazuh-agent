@@ -5,21 +5,56 @@
 Wazuh is a free, open source and enterprise-ready security monitoring
 solution for threat detection, integrity monitoring, incident response and compliance.
 
+## Disclaimer
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 ## Description
 
-Wazuh Agent as Docker Image with auto registration on Wazuh server.
+**Wazuh Agent Docker Image with Auto-Registration on Wazuh Server**
 
-Current implementation could be run as standalone docker container as well as Kubernetes DaemonSet
+The Wazuh Agent, encapsulated within a Docker image, comes equipped with an automatic registration feature for seamless integration with the Wazuh server. This versatile implementation is designed to function not only as a standalone Docker container but also as a Kubernetes DaemonSet.
 
-Agent version is `v4.3.10`
+*Key Features:*
+1. **Containerization:** The Wazuh Agent is encapsulated within a Docker image, promoting portability and ease of deployment across various environments.
+
+2. **Auto-Registration:** The agent is configured to automatically register with the Wazuh server, streamlining the onboarding process and eliminating manual intervention.
+
+3. **Standalone Deployment:** The Docker container can be deployed as a standalone entity, offering flexibility for environments that do not utilize orchestration tools.
+
+4. **Kubernetes Compatibility:** Integrated as a Kubernetes DaemonSet, the Wazuh Agent seamlessly scales across nodes within a Kubernetes cluster, ensuring comprehensive security coverage.
+
+
+*Note:*
+Always refer to the [official documentation](https://documentation.wazuh.com/current/getting-started/index.html) for detailed configuration options and additional customization possibilities.
+
+This implementation offers a seamless and adaptable solution for incorporating Wazuh security monitoring into both standalone and orchestrated environments.
+
+## Wazuh agent version
+
+| GitHub branch/tag | Wazuh Agent version | Docker image tag |
+|-------------------|---------------------|------------------|
+| main              | v4.3.10             | lates            |
+| v4.7.1-1          | v4.7.1-1            | 4.7.1            |
+| v4.6.0-1          | v4.6.0-1            | 4.6.0            |
+| v4.5.4-1          | v4.5.4-1            | 4.5.4            |
+| v4.4.5-1          | v4.4.5-1            | 4.4.5            |
 
 ## DockerHub images
 
 | Repository Name                                               | Description                                                 | Pull command                                     |
 |---------------------------------------------------------------|-------------------------------------------------------------|--------------------------------------------------|
-| https://hub.docker.com/r/kennyopennix/wazuh-agent             | Wazuh agent based on Minideb                                | docker pull kennyopennix/wazuh-agent             |
-| https://hub.docker.com/r/kennyopennix/wazuh-agent-amazonlinux | Wazuh agent based on Amazon Linux version 2023.3.20231218.0 | docker pull kennyopennix/wazuh-agent-amazonlinux |
-| https://hub.docker.com/r/kennyopennix/wazuh-agent-ubuntu      | Wazuh agent based on Ubuntu 24.04                           | docker pull kennyopennix/wazuh-agent-ubuntu      |
+| https://hub.docker.com/r/opennix/wazuh-agent            | Wazuh agent based on Minideb                                | docker pull opennix/wazuh-agent                  |
+| https://hub.docker.com/r/opennix/wazuh-agent-amazonlinux | Wazuh agent based on Amazon Linux version 2023.3.20231218.0 | docker pull opennix/wazuh-agent-amazonlinux |
+| https://hub.docker.com/r/opennix/wazuh-agent-ubuntu     | Wazuh agent based on Ubuntu 24.04                           | docker pull opennix/wazuh-agent-ubuntu      |
 |                                                               |                                                             |                                                  |
 
 
@@ -52,7 +87,7 @@ Agent version is `v4.3.10`
 The Simplest way of running the container
 
 ```shell
-docker run --rm kennyopennix/wazuh-agent:latest
+docker run --rm opennix/wazuh-agent:latest
 ```
 ## Run docker-compose
 
@@ -90,7 +125,7 @@ docker run -d --name wazuh -v /:/rootfs:ro --net host --hostname ${HOSTNAME} \
 -e JOIN_MANAGER_MASTER_HOST=172.17.0.1 -e JOIN_MANAGER_WORKER_HOST=172.17.0.1 \
 -e JOIN_PASSWORD=test123 -e JOIN_MANAGER_USER=user \
 -v /etc/os-release:/etc/os-release -v /var/run/docker.sock:/var/run/docker.sock \
- kennyopennix/wazuh-agent:latest
+ opennix/wazuh-agent
 
 ```
 
@@ -132,8 +167,32 @@ env:
 And apply template ```kubectl -f wazuh-daemon-sets.yaml```
 DaemonSet will deploy to wazuh namespace.
 
-## Build docker image
+## Build local docker image
+
+Building default image agent based on [Minideb](https://github.com/bitnami/minideb) with default Agent version `4.3.10-1`
 
 ```bash
 docker build . -t wazuh-agent:latest
+```
+
+Building agent image based on [Amazon Linux](https://hub.docker.com/_/amazonlinux) with default Agent version `4.3.10-1`
+```bash
+docker build -f images/Dockerfie.amazonlinux . -t wazuh-agent:latest
+```
+
+Building agent image based on [Ubuntu 24.04](https://wiki.ubuntu.com/NobleNumbat) with default Agent version `4.3.10-1`
+```bash
+docker build -f images/Dockerfie.ubuntu . -t wazuh-agent:latest
+```
+
+Build agent image with custom agent version
+
+```shell
+ docker build -f path-to-docker-file . -t  wazuh-agent:<tag> --build-arg AGENT_VERSION=<wazuh-agent-version>
+```
+
+For example build minideb with Wazuh agent version `4.4.5-1`
+
+```shell
+ docker build . -t  wazuh-agent:latest --build-arg AGENT_VERSION=4.4.5-1
 ```
