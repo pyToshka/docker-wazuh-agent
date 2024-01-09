@@ -59,4 +59,4 @@ jobs:
           tags: ${{ matrix.image }}:${{ steps.vars.outputs.tag }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-              AGENT_VERSION={{ steps.vars.outputs.tag }}
+              AGENT_VERSION=${{ steps.vars.outputs.tag }}
