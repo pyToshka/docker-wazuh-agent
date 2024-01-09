@@ -5,9 +5,8 @@ RUN apt update && apt install python3-pip python3-setuptools python3-dev gcc -y 
      python3 -m pip wheel -w /tmp/wheel -r /tmp/requirements.txt
 
 FROM ubuntu:${TAG}
-LABEL maintainer="medvedev.yp@gmail.com"
-LABEL version="4.3.10"
-LABEL description="Wazuh Docker Agent"
+LABEL maintainer="support@opennix.ru"
+LABEL description="Ubuntu 24.04 Wazuh Docker Agent"
 ARG AGENT_VERSION="4.3.10-1"
 ENV JOIN_MANAGER_MASTER_HOST=""
 ENV JOIN_MANAGER_WORKER_HOST=""

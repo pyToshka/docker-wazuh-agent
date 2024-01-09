@@ -11,15 +11,23 @@ Wazuh Agent as Docker Image with auto registration on Wazuh server.
 
 Current implementation could be run as standalone docker container as well as Kubernetes DaemonSet
 
-Agent version is `v4.3.10`
+## Wazuh agent version
+
+| GitHub branch/tag | Wazuh Agent version | Docker image tag |
+|-------------------|---------------------|------------------|
+| main              | v4.3.10             | lates            |
+| v4.7.1-1          | v4.7.1-1            | 4.7.1            |
+| v4.6.0-1          | v4.6.0-1            | 4.6.0            |
+| v4.5.4-1          | v4.5.4-1            | 4.5.4            |
+| v4.4.5-1          | v4.4.5-1            | 4.4.5            |
 
 ## DockerHub images
 
 | Repository Name                                               | Description                                                 | Pull command                                     |
 |---------------------------------------------------------------|-------------------------------------------------------------|--------------------------------------------------|
-| https://hub.docker.com/r/kennyopennix/wazuh-agent             | Wazuh agent based on Minideb                                | docker pull kennyopennix/wazuh-agent             |
-| https://hub.docker.com/r/kennyopennix/wazuh-agent-amazonlinux | Wazuh agent based on Amazon Linux version 2023.3.20231218.0 | docker pull kennyopennix/wazuh-agent-amazonlinux |
-| https://hub.docker.com/r/kennyopennix/wazuh-agent-ubuntu      | Wazuh agent based on Ubuntu 24.04                           | docker pull kennyopennix/wazuh-agent-ubuntu      |
+| https://hub.docker.com/r/opennix/wazuh-agent            | Wazuh agent based on Minideb                                | docker pull opennix/wazuh-agent                  |
+| https://hub.docker.com/r/opennix/wazuh-agent-amazonlinux | Wazuh agent based on Amazon Linux version 2023.3.20231218.0 | docker pull opennix/wazuh-agent-amazonlinux |
+| https://hub.docker.com/r/opennix/wazuh-agent-ubuntu     | Wazuh agent based on Ubuntu 24.04                           | docker pull opennix/wazuh-agent-ubuntu      |
 |                                                               |                                                             |                                                  |
 
 
@@ -52,7 +60,7 @@ Agent version is `v4.3.10`
 The Simplest way of running the container
 
 ```shell
-docker run --rm kennyopennix/wazuh-agent:latest
+docker run --rm opennix/wazuh-agent:latest
 ```
 ## Run docker-compose
 
@@ -90,7 +98,7 @@ docker run -d --name wazuh -v /:/rootfs:ro --net host --hostname ${HOSTNAME} \
 -e JOIN_MANAGER_MASTER_HOST=172.17.0.1 -e JOIN_MANAGER_WORKER_HOST=172.17.0.1 \
 -e JOIN_PASSWORD=test123 -e JOIN_MANAGER_USER=user \
 -v /etc/os-release:/etc/os-release -v /var/run/docker.sock:/var/run/docker.sock \
- kennyopennix/wazuh-agent:latest
+ opennix/wazuh-agent
 
 ```
 
@@ -132,7 +140,7 @@ env:
 And apply template ```kubectl -f wazuh-daemon-sets.yaml```
 DaemonSet will deploy to wazuh namespace.
 
-## Build docker image
+## Build local docker image
 
 ```bash
 docker build . -t wazuh-agent:latest
