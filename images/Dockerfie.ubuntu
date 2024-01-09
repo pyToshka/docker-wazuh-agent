@@ -1,9 +1,10 @@
-FROM  bitnami/minideb:latest-amd64 as builder
+ARG TAG=24.04
+FROM ubuntu:${TAG} as builder
 COPY requirements.txt /tmp
-RUN install_packages python3-pip python3-setuptools python3-dev gcc && \
+RUN apt update && apt install python3-pip python3-setuptools python3-dev gcc -y && \
      python3 -m pip wheel -w /tmp/wheel -r /tmp/requirements.txt
 
-FROM bitnami/minideb:bookworm
+FROM ubuntu:${TAG}
 LABEL maintainer="medvedev.yp@gmail.com"
 LABEL version="4.3.10"
 LABEL description="Wazuh Docker Agent"
@@ -17,15 +18,18 @@ ENV JOIN_MANAGER_PASSWORD=""
 ENV JOIN_MANAGER_API_PORT="55000"
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-RUN install_packages \
-  procps curl apt-transport-https gnupg2 inotify-tools python3-docker python3-setuptools python3-pip && \
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PIP_ROOT_USER_ACTION=ignore
+ENV TZ=Etc/UTC
+COPY *.py *.jinja2  /var/ossec/
+WORKDIR /var/ossec/
+COPY --from=builder /tmp/wheel /tmp/wheel
+RUN apt update && apt install -y procps curl apt-transport-https gnupg2 inotify-tools python3-docker python3-setuptools python3-pip && \
   curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - && \
   echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list && \
-  install_packages wazuh-agent=${AGENT_VERSION}  && \
-  echo "deb http://deb.debian.org/debian-security/ bullseye-security main contrib non-free" >> /etc/apt/sources.list && \
+  apt update && apt install -y wazuh-agent=${AGENT_VERSION}  && \
   mkdir -p /usr/share/man/man1 && \
-  install_packages openjdk-11-jdk
-
+  apt install -y openjdk-11-jdk
 COPY *.py *.jinja2  /var/ossec/
 WORKDIR /var/ossec/
 COPY --from=builder /tmp/wheel /tmp/wheel
@@ -37,5 +41,8 @@ RUN pip3 install --break-system-packages --no-index /tmp/wheel/*.whl && \
   rm -rf /var/lib/{apt,dpkg,cache,log}/ && \
   rm -rf  /tmp/* /var/tmp/* /var/log/* && \
   chown -R wazuh:wazuh /var/ossec/
+EXPOSE 5000
+ENTRYPOINT ["./register_agent.py"]
+
 EXPOSE 5000
 ENTRYPOINT ["./register_agent.py"]

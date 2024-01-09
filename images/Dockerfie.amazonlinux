@@ -1,0 +1,34 @@
+FROM amazonlinux:2023.3.20231218.0 as builder
+COPY requirements.txt /tmp
+RUN yum install python3-pip python3-setuptools python3-devel gcc -y && \
+     python3 -m pip wheel -w /tmp/wheel -r /tmp/requirements.txt
+
+FROM amazonlinux:2023.3.20231218.0
+LABEL maintainer="medvedev.yp@gmail.com"
+LABEL version="4.3.10"
+LABEL description="Wazuh Docker Agent"
+ARG AGENT_VERSION="4.3.10-1"
+ENV JOIN_MANAGER_MASTER_HOST=""
+ENV JOIN_MANAGER_WORKER_HOST=""
+ENV VIRUS_TOTAL_KEY=""
+ENV JOIN_MANAGER_PROTOCOL="https"
+ENV JOIN_MANAGER_USER = ""
+ENV JOIN_MANAGER_PASSWORD=""
+ENV JOIN_MANAGER_API_PORT="55000"
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PIP_ROOT_USER_ACTION=ignore
+COPY *.py *.jinja2  /var/ossec/
+WORKDIR /var/ossec/
+COPY --from=builder /tmp/wheel /tmp/wheel
+COPY images/amazonlinux/wazuh.repo /etc/yum.repos.d/wazuh.repo
+RUN rpm --import https://packages.wazuh.com/key/GPG-KEY-WAZUH && \
+    yum install python3-pip python3-setuptools inotify-tools procps -y && \
+    yum install -y wazuh-agent-${AGENT_VERSION} && \
+    pip3 install --no-index /tmp/wheel/*.whl && \
+    chmod +x /var/ossec/deregister_agent.py && \
+    chmod +x /var/ossec/register_agent.py && \
+    rm -rf  /tmp/* /var/tmp/* /var/log/* && \
+    chown -R wazuh:wazuh /var/ossec/
+EXPOSE 5000
+ENTRYPOINT ["./register_agent.py"]

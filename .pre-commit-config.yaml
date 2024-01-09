@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: f95941eae9e108e2124c55ad97475aada32bba8d
+    rev: v4.5.0
     hooks:
     -   id: check-yaml
     -   id: end-of-file-fixer
@@ -9,21 +9,14 @@ repos:
     -   id: check-merge-conflict
     -   id: mixed-line-ending
         args: [--fix=lf]
+
 - repo: https://github.com/ambv/black
-  rev: b1d060101626aa1c332f52e4bdf0ae5e4cc07990
-  hooks:
-    - id: black
-- repo: https://github.com/ambv/black
-  rev: b1d060101626aa1c332f52e4bdf0ae5e4cc07990
+  rev: 23.1.0
   hooks:
   - id: black
     language_version: python3.8
-- repo: https://github.com/motet-a/jinjalint
-  rev: '01e0a4d8f1ee775aee00eb9d715eff2b4cc49e4d'
-  hooks:
-  - id: jinjalint
 - repo: https://github.com/pre-commit/pygrep-hooks
-  rev: c1fb376edcbd404e10c835f3b420c10503593d58  # Use the ref you want to point at
+  rev: v1.10.0
   hooks:
   - id: python-use-type-annotations
   - id: python-check-blanket-noqa
@@ -32,23 +25,19 @@ repos:
   - id: rst-backticks
   - id: text-unicode-replacement-char
 - repo: https://github.com/jumanjihouse/pre-commit-hooks
-  rev: 2.1.5  # or specific git tag
+  rev: 3.0.0
   hooks:
     - id: bundler-audit
-    - id: check-mailmap
     - id: fasterer
     - id: forbid-binary
     - id: git-check
-    - id: markdownlint
     - id: reek
-    - id: require-ascii
-    - id: rubocop
     - id: script-must-have-extension
     - id: script-must-not-have-extension
     - id: shellcheck
     - id: shfmt
 - repo: https://github.com/jorisroovers/gitlint
-  rev: '1a0ed8d03ac002f74f1b33706d509dcb4425ab4d'
+  rev: 'v0.19.1'
   hooks:
   - id: gitlint
 - repo: local
@@ -60,10 +49,6 @@ repos:
     entry: flake8
     types: [python]
 - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
-  rev: 7fdb07b03cb7103198eb13a614de75725cfd2feb
+  rev: 'v1.3.2'
   hooks:
   - id: python-safety-dependencies-check
-- repo: https://github.com/PyCQA/bandit
-  rev: '2bd1ffaae1b83102af8587dcbeecd0b402dbec4e'
-  hooks:
-  - id: bandit

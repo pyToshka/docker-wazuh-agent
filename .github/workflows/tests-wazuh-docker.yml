@@ -1,0 +1,122 @@
+name: Test Wazuh agent dockerfiles
+
+on:
+  workflow_run:
+    workflows: ["CodeQL"]
+    branches: [main]
+    types:
+      - completed
+  pull_request:
+    branches:
+      - 'main'
+      - 'release-*'
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+  issues: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  pyunit-tests:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.9"
+        cache: 'pip'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+    - name: Lint with flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Cache Docker images.
+      uses: ScribeMD/docker-cache@0.3.7
+      with:
+        key: docker-${{ runner.os }}
+    - name: Test with pytest
+      run: |
+        pytest  -v --capture=sys -x --tb=long --junitxml=/tmp/test-results/wazuh-unittests.xml
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: wazuh-unittests
+        path: /tmp/test-results/wazuh-unittests.xml
+  docker-compose-tests:
+    needs: "pyunit-tests"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.9"
+        cache: 'pip'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+    - name: Cache Docker images.
+      if: always()
+      uses: ScribeMD/docker-cache@0.3.7
+      with:
+        key: docker-${{ runner.os }}
+    - name: Download artifact from build job
+      uses: actions/download-artifact@v3
+      with:
+        name: wazuh-unittests
+        path: ${{ github.workspace }}/test-results/
+    - name: Create single node certificates
+      run: docker-compose -f tests/single-node/generate-indexer-certs.yml run --rm generator
+
+    - name: Start single node stack
+      run: docker-compose -f docker-compose.yml up -d --build
+
+    - name: Check Wazuh indexer start
+      run: |
+       sleep 60
+       status_green="`curl -XGET "https://0.0.0.0:9200/_cluster/health" -u admin:SecretPassword -k -s | grep green | wc -l`"
+       if [[ $status_green -eq 1 ]]; then
+        curl -XGET "https://0.0.0.0:9200/_cluster/health" -u admin:SecretPassword -k -s
+       else
+        curl -XGET "https://0.0.0.0:9200/_cluster/health" -u admin:SecretPassword -k -s
+        exit 1
+       fi
+       status_index="`curl -XGET "https://0.0.0.0:9200/_cat/indices" -u admin:SecretPassword -k -s | wc -l`"
+       status_index_green="`curl -XGET "https://0.0.0.0:9200/_cat/indices" -u admin:SecretPassword -k -s | grep "green" | wc -l`"
+       if [[ $status_index_green -eq $status_index ]]; then
+        curl -XGET "https://0.0.0.0:9200/_cat/indices" -u admin:SecretPassword -k -s
+       else
+        curl -XGET "https://0.0.0.0:9200/_cat/indices" -u admin:SecretPassword -k -s
+        exit 1
+       fi
+
+    - name: Tests agent containers
+      run: pytest  -v --capture=sys -x --tb=long .github/workflows/test_docker_compose.py --disable-warnings --junitxml=/tmp/test-results/wazuh-docker-compose.xml
+    - name: Copy Test Results
+      if: always()
+      run: |
+        cp -Lpr  /tmp/test-results/wazuh-docker-compose.xml ${{ github.workspace }}/test-results/wazuh-docker-compose.xml
+      shell: bash
+    - name: Check results
+      run: |
+        ls -R ${{ github.workspace }}/test-results/
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+         files: |
+           test-results/**/*.xml
+    - name: Stop containers
+      if: always()
+      run: docker-compose -f docker-compose.yml down
