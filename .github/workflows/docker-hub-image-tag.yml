@@ -51,14 +51,15 @@ jobs:
 
       - name: Set Agent version
         shell: bash
-        run: echo "AGENT_VERSION=$(echo ${GITHUB_REF#refs/heads/} | sed 's/v//g')" >> $GITHUB_AGENT_VERSION
+        run: echo "AGENT_VERSION=$(echo ${GITHUB_REF#refs/heads/} | sed 's/v//g')" >> $GITHUB_ENV
 
       - name: Set Docker tag
         shell: bash
-        run: echo "TAG_NAME=$(echo ${GITHUB_REF#refs/heads/} | sed 's/v//g'|sed 's/-1//g)" >> $GITHUB_OUTPUT
+        run: echo "TAG_NAME=$(echo ${GITHUB_REF#refs/heads/} | sed 's/v//g'|sed 's/-1//g)" >> $GITHUB_ENV
 
       - name: Docker tag and agent version
         run: |
+          echo "All envs ${{ env }}"
           echo "New docker image tag ${{ env.TAG_NAME }}"
           echo "Wazuh agent version ${{ env.AGENT_VERSION }}"
 
