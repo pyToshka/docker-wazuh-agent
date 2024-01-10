@@ -1,9 +1,9 @@
-FROM amazonlinux:2023.3.20231218.0 as builder
+FROM amazonlinux@sha256:355f1638075375e4db3a0f7aa9cd73f79fb1a738b72035bc66a3cfda30e0053b as builder
 COPY requirements.txt /tmp
 RUN yum install python3-pip python3-setuptools python3-devel gcc -y && \
      python3 -m pip wheel -w /tmp/wheel -r /tmp/requirements.txt
 
-FROM amazonlinux:2023.3.20231218.0
+FROM amazonlinux@sha256:355f1638075375e4db3a0f7aa9cd73f79fb1a738b72035bc66a3cfda30e0053b
 LABEL maintainer="support@opennix.ru"
 LABEL description="AmazonLinx Wazuh Docker Agent"
 ARG AGENT_VERSION="4.3.10-1"
