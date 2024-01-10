@@ -9,11 +9,11 @@ build-minideb: ## Build Wazuh Agent minideb based
 	docker tag kennyopennix/wazuh-agent:latest kennyopennix/wazuh-agent:$(VERSION)
 
 build-amazon-linux: ## Build Wazuh Agent amazon linux based
-	docker build -f ./images/Dockerfie.amazonlinux -t kennyopennix/wazuh-agent-amazonlinux:latest .  && \
+	docker build -f ./images/Dockerfile.amazonlinux -t kennyopennix/wazuh-agent-amazonlinux:latest .  && \
 	docker tag kennyopennix/wazuh-agent-amazonlinux:latest kennyopennix/wazuh-agent-amazonlinux:$(VERSION)
 
 build-ubuntu: ## Build Wazuh Agent ubuntu linux based
-	docker build -f ./images/Dockerfie.ubuntu -t kennyopennix/wazuh-agent-ubuntu:latest .  && \
+	docker build -f ./images/Dockerfile.ubuntu -t kennyopennix/wazuh-agent-ubuntu:latest .  && \
 	docker tag kennyopennix/wazuh-agent-ubuntu:latest kennyopennix/wazuh-agent-ubuntu:$(VERSION)
 
 docker-run: ## Run Wazuh Agent docker image  minideb based
@@ -37,3 +37,15 @@ docker-buildx:
 run-local: ## Run docker compose stack with all agents on board
 	docker compose -f tests/single-node/generate-indexer-certs.yml run --rm generator
 	docker compose -f docker-compose.yml up -d --build
+
+run-local-minideb: ## Run docker compose stack with only minideb agent.
+	docker compose -f tests/single-node/generate-indexer-certs.yml run --rm generator
+	AGENT_REPLICAS=0 docker compose -f docker-compose.yml up -d --build
+
+run-local-dev: ## Run Wazuh cluster without agents.
+	docker compose -f tests/single-node/generate-indexer-certs.yml run --rm generator
+	AGENT_REPLICAS=0 LOCAL_DEV=0 docker compose -f docker-compose.yml up -d --build
+
+destroy: ## Destroy docker compose stack and cleanup
+	docker compose down --remove-orphans --rmi local -v
+	rm -rf tests/single-node/config/wazuh_indexer_ssl_certs/*

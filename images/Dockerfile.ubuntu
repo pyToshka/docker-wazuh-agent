@@ -12,7 +12,7 @@ ENV JOIN_MANAGER_MASTER_HOST=""
 ENV JOIN_MANAGER_WORKER_HOST=""
 ENV VIRUS_TOTAL_KEY=""
 ENV JOIN_MANAGER_PROTOCOL="https"
-ENV JOIN_MANAGER_USER = ""
+ENV JOIN_MANAGER_USER=""
 ENV JOIN_MANAGER_PASSWORD=""
 ENV JOIN_MANAGER_API_PORT="55000"
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -40,8 +40,5 @@ RUN pip3 install --break-system-packages --no-index /tmp/wheel/*.whl && \
   rm -rf /var/lib/{apt,dpkg,cache,log}/ && \
   rm -rf  /tmp/* /var/tmp/* /var/log/* && \
   chown -R wazuh:wazuh /var/ossec/
-EXPOSE 5000
-ENTRYPOINT ["./register_agent.py"]
-
 EXPOSE 5000
 ENTRYPOINT ["./register_agent.py"]

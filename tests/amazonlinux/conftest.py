@@ -6,12 +6,12 @@ import os
 
 root_dir = os.path.abspath(os.curdir)
 base_image = os.getenv("IMAGE_NAME", "wazuh-agent:amazonlinux")
-docker_file = os.getenv("DOCKERFILE", "images/Dockerfie.amazonlinux")
+docker_file = os.getenv("DOCKERFILE", "images/Dockerfile.amazonlinux")
 
 
 @pytest.fixture(scope="session")
 def host(request):
-    print(f"{root_dir}/images/Dockerfie.amazonlinux")
+    print(f"{root_dir}/images/Dockerfile.amazonlinux")
     subprocess.check_call(
         [
             "docker",

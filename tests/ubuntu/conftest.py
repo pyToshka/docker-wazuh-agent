@@ -6,12 +6,12 @@ import os
 
 root_dir = os.path.abspath(os.curdir)
 base_image = os.getenv("IMAGE_NAME", "wazuh-agent:ubuntu")
-docker_file = os.getenv("DOCKERFILE", "images/Dockerfie.ubuntu")
+docker_file = os.getenv("DOCKERFILE", "images/Dockerfile.ubuntu")
 
 
 @pytest.fixture(scope="session")
 def host(request):
-    print(f"{root_dir}/images/Dockerfie.ubuntu")
+    print(f"{root_dir}/images/Dockerfile.ubuntu")
     subprocess.check_call(
         [
             "docker",

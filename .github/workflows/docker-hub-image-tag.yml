@@ -21,15 +21,15 @@ jobs:
         include:
           - dockerfile: ./Dockerfile
             image: kennyopennix/wazuh-agent
-          - dockerfile: ./images/Dockerfie.amazonlinux
+          - dockerfile: ./images/Dockerfile.amazonlinux
             image: kennyopennix/wazuh-agent-amazonlinux
-          - dockerfile: ./images/Dockerfie.ubuntu
+          - dockerfile: ./images/Dockerfile.ubuntu
             image: kennyopennix/wazuh-agent-ubuntu
           - dockerfile: ./Dockerfile
             image: opennix/wazuh-agent
-          - dockerfile: ./images/Dockerfie.amazonlinux
+          - dockerfile: ./images/Dockerfile.amazonlinux
             image: opennix/wazuh-agent-amazonlinux
-          - dockerfile: ./images/Dockerfie.ubuntu
+          - dockerfile: ./images/Dockerfile.ubuntu
             image: opennix/wazuh-agent-ubuntu
     steps:
 
