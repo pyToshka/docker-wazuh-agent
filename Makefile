@@ -49,3 +49,5 @@ run-local-dev: ## Run Wazuh cluster without agents.
 destroy: ## Destroy docker compose stack and cleanup
 	docker compose down --remove-orphans --rmi local -v
 	rm -rf tests/single-node/config/wazuh_indexer_ssl_certs/*
+test: ## Run unit tests
+	pytest  -v -n auto --capture=sys -x --tb=long

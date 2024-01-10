@@ -1,4 +1,4 @@
-ARG TAG=@sha256:6042500cf4b44023ea1894effe7890666b0c5c7871ed83a97c36c76ae560bb9b
+ARG TAG=@sha256:145bacc9db29ff9c9c021284e5b7b22f1193fc38556c578250c926cf3c883a13
 FROM ubuntu${TAG} as builder
 COPY requirements.txt /tmp
 RUN apt update && apt install python3-pip python3-setuptools python3-dev gcc -y && \
