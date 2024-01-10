@@ -1,10 +1,10 @@
-ARG TAG=24.04
-FROM ubuntu:${TAG} as builder
+ARG TAG=@sha256:145bacc9db29ff9c9c021284e5b7b22f1193fc38556c578250c926cf3c883a13
+FROM ubuntu${TAG} as builder
 COPY requirements.txt /tmp
 RUN apt update && apt install python3-pip python3-setuptools python3-dev gcc -y && \
      python3 -m pip wheel -w /tmp/wheel -r /tmp/requirements.txt
 
-FROM ubuntu:${TAG}
+FROM ubuntu${TAG}
 LABEL maintainer="support@opennix.ru"
 LABEL description="Ubuntu 24.04 Wazuh Docker Agent"
 ARG AGENT_VERSION="4.3.10-1"
