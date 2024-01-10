@@ -177,12 +177,12 @@ docker build . -t wazuh-agent:latest
 
 Building agent image based on [Amazon Linux](https://hub.docker.com/_/amazonlinux) with default Agent version `4.3.10-1`
 ```bash
-docker build -f images/Dockerfie.amazonlinux . -t wazuh-agent:latest
+docker build -f images/Dockerfile.amazonlinux . -t wazuh-agent:latest
 ```
 
 Building agent image based on [Ubuntu 24.04](https://wiki.ubuntu.com/NobleNumbat) with default Agent version `4.3.10-1`
 ```bash
-docker build -f images/Dockerfie.ubuntu . -t wazuh-agent:latest
+docker build -f images/Dockerfile.ubuntu . -t wazuh-agent:latest
 ```
 
 Build agent image with custom agent version
