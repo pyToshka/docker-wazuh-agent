@@ -15,7 +15,7 @@ def test_folders(host, srv_folders):
 def test_python_version(host):
     python = host.package("python3")
     assert python.is_installed
-    assert python.version.startswith("3.11")
+    assert python.version.startswith("3.10")
 
 
 @pytest.mark.parametrize(
