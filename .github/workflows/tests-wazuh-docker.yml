@@ -23,7 +23,9 @@ jobs:
   pyunit-tests:
 
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        wazuh_agent_version: ['v4.4.5-1', 'v4.5.4-1','v4.6.0-1','v4.7.1-1','v4.7.2-1']
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python 3.9
@@ -47,6 +49,8 @@ jobs:
     - name: Test with pytest
       run: |
         pytest -n auto -v --capture=sys -x --tb=long --junitxml=/tmp/test-results/wazuh-unittests.xml
+      env:
+        AGENT_VERSION: "${{ matrix.wazuh_agent_version }}"
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
@@ -55,6 +59,9 @@ jobs:
   docker-compose-tests:
     needs: "pyunit-tests"
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        wazuh_agent_version: ['v4.4.5-1', 'v4.5.4-1','v4.6.0-1','v4.7.1-1','v4.7.2-1']
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python 3.9
@@ -81,7 +88,8 @@ jobs:
 
     - name: Start single node stack
       run: docker-compose -f docker-compose.yml up -d --build
-
+      env:
+        AGENT_VERSION: "${{ matrix.wazuh_agent_version }}"
     - name: Check Wazuh indexer start
       run: |
        sleep 60
