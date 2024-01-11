@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+      args:
+        AGENT_VERSION: ${AGENT_VERSION:-4.3.10-1}
     image: wazuh-agent:minideb
     hostname: wazuh-agent-minideb
     deploy:
@@ -22,6 +24,8 @@ services:
     build:
       context: .
       dockerfile: ./images/Dockerfile.amazonlinux
+      args:
+        AGENT_VERSION: ${AGENT_VERSION:-4.3.10-1}
     image: wazuh-agent:amazonlinux
     deploy:
       replicas: ${AGENT_REPLICAS:-1}
@@ -42,6 +46,8 @@ services:
     build:
       context: .
       dockerfile: ./images/Dockerfile.ubuntu
+      args:
+        AGENT_VERSION: ${AGENT_VERSION:-4.3.10-1}
     image: wazuh-agent:ubuntu
     deploy:
       replicas: ${AGENT_REPLICAS:-1}

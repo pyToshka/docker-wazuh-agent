@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        wazuh_agent_version: ['v4.4.5-1', 'v4.5.4-1','v4.6.0-1','v4.7.1-1','v4.7.2-1']
+        wazuh_agent_version: ['4.3.10-1','4.4.5-1', '4.5.4-1','4.6.0-1','4.7.1-1','4.7.2-1']
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python 3.9
@@ -48,20 +48,20 @@ jobs:
         key: docker-${{ runner.os }}
     - name: Test with pytest
       run: |
-        pytest -n auto -v --capture=sys -x --tb=long --junitxml=/tmp/test-results/wazuh-unittests.xml
+        pytest -n auto -v --capture=sys -x --tb=long --junitxml=/tmp/test-results/wazuh-unittests-${{ matrix.wazuh_agent_version }}.xml
       env:
         AGENT_VERSION: "${{ matrix.wazuh_agent_version }}"
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
         name: wazuh-unittests
-        path: /tmp/test-results/wazuh-unittests.xml
+        path: /tmp/test-results/wazuh-unittests-${{ matrix.wazuh_agent_version }}.xml
   docker-compose-tests:
     needs: "pyunit-tests"
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        wazuh_agent_version: ['v4.4.5-1', 'v4.5.4-1','v4.6.0-1','v4.7.1-1','v4.7.2-1']
+        wazuh_agent_version: ['4.3.10-1','4.4.5-1', '4.5.4-1','4.6.0-1','4.7.1-1','4.7.2-1']
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python 3.9
@@ -110,11 +110,11 @@ jobs:
        fi
 
     - name: Tests agent containers
-      run: pytest  -v --capture=sys -x --tb=long .github/workflows/test_docker_compose.py --disable-warnings --junitxml=/tmp/test-results/wazuh-docker-compose.xml
+      run: pytest  -v --capture=sys -x --tb=long .github/workflows/test_docker_compose.py --disable-warnings --junitxml=/tmp/test-results/wazuh-docker-compose-${{ matrix.wazuh_agent_version }}.xml
     - name: Copy Test Results
       if: always()
       run: |
-        cp -Lpr  /tmp/test-results/wazuh-docker-compose.xml ${{ github.workspace }}/test-results/wazuh-docker-compose.xml
+        cp -Lpr  /tmp/test-results/wazuh-docker-${{ matrix.wazuh_agent_version }}.xml ${{ github.workspace }}/test-results/wazuh-docker-compose-${{ matrix.wazuh_agent_version }}.xml
       shell: bash
     - name: Check results
       run: |
