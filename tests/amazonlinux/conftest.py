@@ -5,7 +5,7 @@ import subprocess
 import os
 
 root_dir = os.path.abspath(os.curdir)
-base_image = os.getenv("IMAGE_NAME", "wazuh-agent:amazonlinux")
+base_image = os.getenv("IMAGE_NAME", "wazuh-agent-amazonlinux")
 docker_file = os.getenv("DOCKERFILE", "images/Dockerfile.amazonlinux")
 wazuh_agent_version = os.getenv("AGENT_VERSION", "4.3.10-1")
 

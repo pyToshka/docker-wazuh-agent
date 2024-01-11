@@ -26,9 +26,10 @@ health = HealthCheck()
 
 class RequestHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
-        pass
+        raise NotImplementedError("notImplemented() cannot be performed because ...")
+        # pass
 
-    def do_GET(self):
+    def sent_request(self):
         message, status_code, headers = health.run()
         try:
             request_path = str(self.path).replace("\n", " ")
@@ -190,7 +191,6 @@ def add_agent(agt_name, agt_ip=None):
     response_msg = http_codes_serializer(response=response, status_code=status_code)
     if status_code == 400:
         logger.error(f"During adding Wazuh agent request return {response_msg}")
-        pass
     elif status_code == 200 and response["error"] == 0:
         wazuh_agent_id = response["data"]["id"]
         wazuh_agent_key = response["data"]["key"]
@@ -251,7 +251,7 @@ def execute(cmd_list, stdin=None):
 
 def restart_wazuh_agent():
     cmd = "/var/ossec/bin/wazuh-control"
-    command_stdout, command_stderr, return_code = execute([cmd, "restart"])
+    command_stdout, command_stderr, _ = execute([cmd, "restart"])
     restarted = False
 
     for line_output in command_stdout.split(os.linesep):
@@ -310,9 +310,7 @@ if __name__ == "__main__":
                 f"Waiting for Wazuh agent {agent_name} become ready current status is {agent_status}......"
             )
             time.sleep(int(wait_time))
-    if groups == "default":
-        pass
-    else:
+    if groups != "default":
         for group in list(groups.split(",")):
             add_agent_to_group(agent_id, group)
     logger.info("Listening on 0.0.0.0:5000")
