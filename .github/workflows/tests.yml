@@ -30,15 +30,12 @@ jobs:
           - dockerfile: ./Dockerfile
             image: wazuh-agent-minideb
             wazuh_cluster_version: '4.7.0'
-            wazuh_agent_version: '4.7.2-1'
           - dockerfile: ./images/Dockerfile.amazonlinux
             image: wazuh-agent-amazonlinux
             wazuh_cluster_version: '4.7.0'
-            wazuh_agent_version: '4.7.2-1'
           - dockerfile: ./images/Dockerfile.ubuntu
             image: wazuh-agent-ubuntu
             wazuh_cluster_version: '4.7.0'
-            wazuh_agent_version: '4.7.2-1'
 
    steps:
    - uses: actions/checkout@v3
