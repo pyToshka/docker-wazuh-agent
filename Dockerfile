@@ -21,7 +21,7 @@ RUN install_packages \
   curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - && \
   echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list && \
   install_packages wazuh-agent=${AGENT_VERSION}  && \
-  echo "deb http://deb.debian.org/debian-security/ bullseye-security main contrib non-free" >> /etc/apt/sources.list && \
+  echo "deb https://deb.debian.org/debian-security/ bullseye-security main contrib non-free" >> /etc/apt/sources.list && \
   mkdir -p /usr/share/man/man1 && \
   install_packages openjdk-11-jdk
 

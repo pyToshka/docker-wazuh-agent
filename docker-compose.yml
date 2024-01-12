@@ -8,6 +8,8 @@ services:
       args:
         AGENT_VERSION: ${AGENT_VERSION:-4.3.10-1}
     image: wazuh-agent-minideb:${AGENT_VERSION:-4.3.10-1}
+    volumes:
+       - ./register_agent.py:/var/ossec/register_agent.py
     hostname: wazuh-agent-minideb
     deploy:
       replicas: ${LOCAL_DEV:-1}
