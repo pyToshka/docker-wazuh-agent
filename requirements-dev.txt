@@ -7,6 +7,6 @@ loguru==0.7.2
 markupsafe==2.1.5
 pytest==7.4.4
 pytest-testinfra==10.0.0
-black==24.1.1
+black==24.2.0
 argparse==1.4.0
 pytest-xdist
