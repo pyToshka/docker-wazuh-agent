@@ -1,9 +1,9 @@
-FROM  bitnami/minideb@sha256:bce8004f7da6547bc568e92895e1b3a3835e6dba48283fbbf9b3f66c1d166c6d as builder
+FROM  bitnami/minideb@sha256:24a64e0d1cddc67eaef8fd90ffdfc23b54dc3e1b8acc822f4d05acfe7982ed2f as builder
 COPY requirements.txt /tmp
 RUN install_packages python3-pip python3-setuptools python3-dev gcc && \
      python3 -m pip wheel -w /tmp/wheel -r /tmp/requirements.txt
 
-FROM bitnami/minideb@sha256:bce8004f7da6547bc568e92895e1b3a3835e6dba48283fbbf9b3f66c1d166c6d
+FROM bitnami/minideb@sha256:24a64e0d1cddc67eaef8fd90ffdfc23b54dc3e1b8acc822f4d05acfe7982ed2f
 LABEL maintainer="support@opennix.ru"
 LABEL description="Wazuh Docker Agent"
 ARG AGENT_VERSION="4.3.10-1"
