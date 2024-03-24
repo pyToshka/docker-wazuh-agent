@@ -5,7 +5,11 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    image: wazuh-agent:minideb
+      args:
+        AGENT_VERSION: ${AGENT_VERSION:-4.3.10-1}
+    image: wazuh-agent-minideb:${AGENT_VERSION:-4.3.10-1}
+    volumes:
+       - ./register_agent.py:/var/ossec/register_agent.py
     hostname: wazuh-agent-minideb
     deploy:
       replicas: ${LOCAL_DEV:-1}
@@ -22,7 +26,9 @@ services:
     build:
       context: .
       dockerfile: ./images/Dockerfile.amazonlinux
-    image: wazuh-agent:amazonlinux
+      args:
+        AGENT_VERSION: ${AGENT_VERSION:-4.3.10-1}
+    image: wazuh-agent-amazonlinux:${AGENT_VERSION:-4.3.10-1}
     deploy:
       replicas: ${AGENT_REPLICAS:-1}
     restart: always
@@ -42,7 +48,9 @@ services:
     build:
       context: .
       dockerfile: ./images/Dockerfile.ubuntu
-    image: wazuh-agent:ubuntu
+      args:
+        AGENT_VERSION: ${AGENT_VERSION:-4.3.10-1}
+    image: wazuh-agent-ubuntu:${AGENT_VERSION:-4.3.10-1}
     deploy:
       replicas: ${AGENT_REPLICAS:-1}
     hostname: wazuh-agent-ubuntu
@@ -59,7 +67,7 @@ services:
         - wazuh.manager
         - wazuh.indexer
   wazuh.manager:
-    image: wazuh/wazuh-manager:4.7.0
+    image: wazuh/wazuh-manager:${WAZUH_CLUSTER_VERSION:-4.7.0}
     hostname: wazuh.manager
     restart: always
     ulimits:
@@ -106,7 +114,7 @@ services:
       timeout: 10s
       retries: 10
   wazuh.indexer:
-    image: wazuh/wazuh-indexer:4.7.0
+    image: wazuh/wazuh-indexer:${WAZUH_CLUSTER_VERSION:-4.7.0}
     hostname: wazuh.indexer
     restart: always
     ports:
@@ -131,7 +139,7 @@ services:
       - ./tests/single-node/config/wazuh_indexer/internal_users.yml:/usr/share/wazuh-indexer/opensearch-security/internal_users.yml
 
   wazuh.dashboard:
-    image: wazuh/wazuh-dashboard:4.7.0
+    image: wazuh/wazuh-dashboard:${WAZUH_CLUSTER_VERSION:-4.7.0}
     hostname: wazuh.dashboard
     restart: always
     ports:

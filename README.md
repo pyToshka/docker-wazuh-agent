@@ -40,13 +40,24 @@ This implementation offers a seamless and adaptable solution for incorporating W
 
 ## Wazuh agent version
 
-| GitHub branch/tag | Wazuh Agent version | Docker image tag |
-|-------------------|---------------------|------------------|
-| main              | v4.3.10             | lates            |
-| v4.7.1-1          | v4.7.1-1            | 4.7.1            |
-| v4.6.0-1          | v4.6.0-1            | 4.6.0            |
-| v4.5.4-1          | v4.5.4-1            | 4.5.4            |
-| v4.4.5-1          | v4.4.5-1            | 4.4.5            |
+### Braking changes
+
+*Wazuh agent v4.3.10* will reach its end of life (EOL) and the cessation of support on February 1, 2024.
+
+
+>> Commencing on February 1, 2024, the main branch will incorporate the latest code.
+>>
+>> Exercise caution, as potential bugs may exist in this branch. It is crucial to migrate all your deployments to Docker image tags listed below for reference.
+
+
+| GitHub branch/tag | Wazuh Agent version | EOL                | Docker image tag |
+|-------------------|---------------------|--------------------|------------------|
+| main              | v4.3.10             | v4.3.10 01.02.2024 | latest           |
+| v4.7.2-1          | v4.7.2-1            | LTS                | 4.7.1            |
+| v4.7.1-1          | v4.7.1-1            | LTS                | 4.7.1            |
+| v4.6.0-1          | v4.6.0-1            | LTS                | 4.6.0            |
+| v4.5.4-1          | v4.5.4-1            | LTS                | 4.5.4            |
+| v4.4.5-1          | v4.4.5-1            | LTS                | 4.4.5            |
 
 ## DockerHub images
 

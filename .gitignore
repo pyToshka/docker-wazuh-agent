@@ -14,3 +14,6 @@ tmp/
 wazuh_indexer_ssl_certs
 snyk-code.sarif
 .dccache
+.coverage*
+coverage.xml
+htmlcov
