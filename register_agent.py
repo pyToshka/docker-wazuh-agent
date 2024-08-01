@@ -14,6 +14,9 @@ from loguru import logger
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import time
 
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 try:
     import requests
@@ -25,10 +28,10 @@ health = HealthCheck()
 
 
 class RequestHandler(BaseHTTPRequestHandler):
-    def log_message(self, format, *args):
-        pass
+    def log_message(self, *args):
+        raise NotImplementedError("notImplemented() cannot be performed because ...")
 
-    def do_GET(self):
+    def sent_request(self):
         message, status_code, headers = health.run()
         try:
             request_path = str(self.path).replace("\n", " ")
@@ -81,14 +84,44 @@ def create_config_file():
     )
 
 
+def delete_agent(agt_name):
+    status_code, response = wazuh_api("get", f"agents?pretty=true&q=name={agt_name}")
+    print(response, status_code)
+    for items in response["data"]["affected_items"]:
+        print(f"Item {items}")
+        status_code, response = wazuh_api(
+            "delete",
+            f"agents?pretty=true&older_than=0s&agents_list={items['id']}&status=all",
+        )
+        msg = json.dumps(response, indent=4, sort_keys=True)
+        code = f"Status: {status_code} - {code_desc(status_code)}"
+        logger.error(f"INFO - DELETE AGENT:\n{code}\n{msg}")
+    status_code, response = wazuh_api(
+        "delete",
+        "agents?pretty=true&older_than=21d&agents_list=all&status=never_connected,disconnected",
+    )
+    for items in response["data"]["affected_items"]:
+        status_code, response = wazuh_api(
+            "delete",
+            f"agents?pretty=true&older_than=0s&agents_list={items['id']}&status=all",
+        )
+        msg = json.dumps(response, indent=4, sort_keys=True)
+        code = f"Status: {status_code} - {code_desc(status_code)}"
+        logger.error(f"INFO - DELETE AGENT:\n{code}\n{msg}")
+
+
 def wazuh_api(method, resource, data=None):
     code = None
     response_json = {}
+    session = requests.Session()
+    retry = Retry(connect=int(max_retry_count), backoff_factor=0.5)
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
     login_headers = {
         "Content-Type": "application/json",
         "Authorization": f"Basic {b64encode(auth).decode()}",
     }
-    response = requests.get(login_url, headers=login_headers, verify=False)  # nosec
+    response = session.get(login_url, headers=login_headers, verify=False)  # nosec
     logger.info(
         f"Response code {response.status_code} response content {response.content}"
     )
@@ -99,22 +132,20 @@ def wazuh_api(method, resource, data=None):
     }
     url = f"{base_url}/{resource}"
     try:
-        requests.packages.urllib3.disable_warnings()
-
         if method.lower() == "post":
-            response = requests.post(
+            response = session.post(
                 url, headers=requests_headers, data=json.dumps(data), verify=verify
             )
         elif method.lower() == "put":
-            response = requests.put(
+            response = session.put(
                 url, headers=requests_headers, data=data, verify=verify
             )
         elif method.lower() == "delete":
-            response = requests.delete(
+            response = session.delete(
                 url, headers=requests_headers, data=data, verify=verify
             )
         else:
-            response = requests.get(
+            response = session.get(
                 url, headers=requests_headers, params=data, verify=verify
             )
 
@@ -139,7 +170,23 @@ health.add_check(check_self)
 
 
 def code_desc(http_status_code):
-    return requests.status_codes._codes[http_status_code][0]
+    return requests.status_codes.codes[http_status_code]
+
+
+def get_agent_id(agt_name):
+    status_code, response = wazuh_api(
+        "get", f"agents?pretty=true&q=name={agt_name}&wait_for_complete=true"
+    )
+    logger.debug(f"Response {status_code}: {response}")
+    for agt_status in response["data"]["affected_items"]:
+        try:
+            agn_id = agt_status["id"]
+            delete_agent(agt_name)
+            logger.info(f"Found wazuh agent with id {agn_id} try to re-use")
+            return agn_id
+        except KeyError as err:
+            logger.error(f"Got error while trying to get id {err}")
+            return None
 
 
 def add_agent_to_group(wazuh_agent_id, agent_group):
@@ -160,37 +207,26 @@ def add_agent_to_group(wazuh_agent_id, agent_group):
 
 
 def add_agent(agt_name, agt_ip=None):
-    if agt_ip:
-        status_code, response = wazuh_api(
-            "post",
-            "agents/insert",
-            {
-                "name": agt_name,
-                "ip": agt_ip,
-                "force": {
-                    "enabled": True,
-                    "disconnected_time": {"enabled": False, "value": "0"},
-                    "after_registration_time": "1s",
-                },
-            },
-        )
+    agt_id = get_agent_id(agt_name)
+    if agt_ip and agt_id:
+        agt_data = {
+            "name": str(agt_name),
+            "ip": agt_ip,
+            "id": agt_id,
+        }
+    elif agt_id:
+        agt_data = {"name": str(agt_name), "id": agt_id}
     else:
-        status_code, response = wazuh_api(
-            "post",
-            "agents/insert",
-            {
-                "name": str(agt_name),
-                "force": {
-                    "enabled": True,
-                    "disconnected_time": {"enabled": False, "value": "0"},
-                    "after_registration_time": "1s",
-                },
-            },
-        )
+        agt_data = {"name": str(agt_name)}
+    logger.info(f"Try to add agent with data {agt_data}")
+    status_code, response = wazuh_api(
+        "post",
+        "agents/insert",
+        agt_data,
+    )
     response_msg = http_codes_serializer(response=response, status_code=status_code)
     if status_code == 400:
         logger.error(f"During adding Wazuh agent request return {response_msg}")
-        pass
     elif status_code == 200 and response["error"] == 0:
         wazuh_agent_id = response["data"]["id"]
         wazuh_agent_key = response["data"]["key"]
@@ -203,8 +239,6 @@ def add_agent(agt_name, agt_ip=None):
 
 
 def wazuh_agent_status(agt_name, pretty=None):
-    wazuh_agnt_name = None
-    wazuh_agnt_status = None
     if pretty:
         status_code, response = wazuh_api(
             "get", f"agents?pretty=true&q=name={agt_name}&wait_for_complete=true"
@@ -215,11 +249,13 @@ def wazuh_agent_status(agt_name, pretty=None):
         )
     response_msg = http_codes_serializer(response=response, status_code=status_code)
     if status_code == 200 and response["error"] == 0:
+        wazuh_agt_name = None
+        wazuh_agt_status = None
         for items in response["data"]["affected_items"]:
-            wazuh_agnt_name = items["name"]
-            wazuh_agnt_status = items["status"]
+            wazuh_agt_name = items["name"]
+            wazuh_agt_status = items["status"]
         logger.info(f"Wazuh agent status: {response_msg}")
-        return wazuh_agnt_name, wazuh_agnt_status
+        return wazuh_agt_name, wazuh_agt_status
     else:
         logger.error(f"Unable to get Wazuh agent status: {response_msg}")
 
@@ -251,7 +287,7 @@ def execute(cmd_list, stdin=None):
 
 def restart_wazuh_agent():
     cmd = "/var/ossec/bin/wazuh-control"
-    command_stdout, command_stderr, return_code = execute([cmd, "restart"])
+    command_stdout, command_stderr, _ = execute([cmd, "restart"])
     restarted = False
 
     for line_output in command_stdout.split(os.linesep):
@@ -282,7 +318,7 @@ if __name__ == "__main__":
         "JOIN_MANAGER_WORKER_HOST", default="wazuh-workers.wazuh.svc.cluster.local"
     )
     wait_time = os.environ.get("WAZUH_WAIT_TIME", default="10")
-    flask_bind = os.environ.get("FLASK_BIND", default="0.0.0.0")
+    max_retry_count = os.environ.get("MAX_RETRY_COUNT", default=10)
     if not node_name:
         node_name = os.environ.get("HOSTNAME")
     login_endpoint = "security/user/authenticate"
@@ -310,9 +346,7 @@ if __name__ == "__main__":
                 f"Waiting for Wazuh agent {agent_name} become ready current status is {agent_status}......"
             )
             time.sleep(int(wait_time))
-    if groups == "default":
-        pass
-    else:
+    if groups != "default":
         for group in list(groups.split(",")):
             add_agent_to_group(agent_id, group)
     logger.info("Listening on 0.0.0.0:5000")
