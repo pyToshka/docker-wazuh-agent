@@ -50,14 +50,14 @@ This implementation offers a seamless and adaptable solution for incorporating W
 >> Exercise caution, as potential bugs may exist in this branch. It is crucial to migrate all your deployments to Docker image tags listed below for reference.
 
 
-| GitHub branch/tag | Wazuh Agent version | EOL                | Docker image tag |
-|-------------------|---------------------|--------------------|------------------|
-| main              | v4.3.10             | v4.3.10 01.02.2024 | latest           |
-| v4.7.2-1          | v4.7.2-1            | LTS                | 4.7.1            |
-| v4.7.1-1          | v4.7.1-1            | LTS                | 4.7.1            |
-| v4.6.0-1          | v4.6.0-1            | LTS                | 4.6.0            |
-| v4.5.4-1          | v4.5.4-1            | LTS                | 4.5.4            |
-| v4.4.5-1          | v4.4.5-1            | LTS                | 4.4.5            |
+| GitHub branch/tag | Wazuh Agent version | EOL | Docker image tag |
+|-------------------|---------------------|-----|------------------|
+| main              | v4.7.2-1            | LTS | latest           |
+| v4.7.2-1          | v4.7.2-1            | LTS | 4.7.1            |
+| v4.7.1-1          | v4.7.1-1            | LTS | 4.7.1            |
+| v4.6.0-1          | v4.6.0-1            | LTS | 4.6.0            |
+| v4.5.4-1          | v4.5.4-1            | LTS | 4.5.4            |
+| v4.4.5-1          | v4.4.5-1            | LTS | 4.4.5            |
 
 ## DockerHub images
 
