@@ -148,7 +148,7 @@ jobs:
         key: docker-${{ matrix.wazuh_agent_version }}
 
     - name: Download artifact from build job
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4.1.7
       with:
         name: wazuh-unittests
         path: ${{ github.workspace }}/test-results/
