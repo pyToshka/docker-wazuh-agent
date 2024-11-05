@@ -17,7 +17,7 @@ spec:
       hostIPC: true
       containers:
       - name: wazuh-agent
-        image: kennyopennix/wazuh-agent:latest
+        image: duplocloud/wazuh-agent:4.7.2-r1
         livenessProbe:
           httpGet:
             path: /healz
@@ -38,9 +38,9 @@ spec:
             memory: 512Mi
         env:
         - name: JOIN_MANAGER_MASTER_HOST
-          value: "wazuh.wazuh.svc.cluster.local"
+          value: "siem-manager.duplotestbed.supportlogic.io"
         - name: JOIN_MANAGER_WORKER_HOST
-          value: "wazuh-workers.wazuh.svc.cluster.local"
+          value: "siem-manager.duplotestbed.supportlogic.io"
         - name: JOIN_MANAGER_PROTOCOL
           value: "https"
         - name: NODE_NAME
@@ -48,7 +48,7 @@ spec:
             fieldRef:
               fieldPath: spec.nodeName
         - name: WAZUH_GROUPS
-          value: "demo"
+          value: "default"
         - name: JOIN_MANAGER_USER
           valueFrom:
            secretKeyRef:
@@ -66,33 +66,28 @@ spec:
         volumeMounts:
         - mountPath: /var/run
           name: var-run
-        - mountPath: /host/dev
+        - mountPath: /dev
           name: dev
-        - mountPath: /host/sys
+        - mountPath: /sys
           name: sys
-          readOnly: true
-        - mountPath: /host/proc
+        - mountPath: /proc
           name: proc
-          readOnly: true
-        - mountPath: /host/etc
+        - mountPath: /etc
           name: etc
-          readOnly: true
         - mountPath: /var/run/docker.sock
           name: docker-socket-mount
-        - mountPath: /host/var/run/docker.sock
-          name: docker-socket-mount
-        - mountPath: /host/boot
-          name: boot
-          readOnly: true
-        - mountPath: /host/usr
-          name: usr
-          readOnly: true
-        - mountPath: /host/lib/modules
+        - mountPath: /lib/modules
           name: modules
-          readOnly: true
-        - mountPath: /host/var/log
+        - mountPath: /var/log
           name: log
-          readOnly: true
+        - mountPath: /var/lib
+          name: var-lib
+        - mountPath: /etc/passwd
+          name: etc-passwd
+          readOnly: true  
+        - mountPath: /etc/group
+          name: etc-group
+          readOnly: true            
       volumes:
       - name: docker-socket-mount
         hostPath:
@@ -112,15 +107,18 @@ spec:
       - name: etc
         hostPath:
           path: /etc
-      - name: boot
-        hostPath:
-          path: /boot
-      - name: usr
-        hostPath:
-          path: /usr
       - name: modules
         hostPath:
           path: /lib/modules
       - name: log
         hostPath:
           path: /var/log
+      - name: var-lib
+        hostPath:
+          path: /var/lib
+      - name: etc-passwd
+        hostPath:
+          path: /etc/passwd
+      - name: etc-group
+        hostPath:
+          path: /etc/group          

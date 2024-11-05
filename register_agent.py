@@ -23,6 +23,35 @@ except ModuleNotFoundError as e:
 
 health = HealthCheck()
 
+# Global variables for caching the token
+cached_token = None
+token_expiration = 0
+
+def get_auth_token():
+    global cached_token, token_expiration
+    
+    # Check if the token is still valid
+    if cached_token and time.time() < token_expiration:
+        logger.info(f"Token is not expired, will use the cached token")
+        return cached_token
+    
+    logger.info(f"Token is empty or got expired, renewing a new token")
+    # Token is expired or not available, fetch a new one
+    login_headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Basic {b64encode(auth).decode()}",
+    }
+    response = requests.get(login_url, headers=login_headers, verify=False)  # nosec
+    if response.status_code == 200:
+        token_data = response.json()
+        cached_token = token_data["data"]["token"]
+        # Set token expiration time (e.g., 5 minutes)
+        token_expiration = time.time() + 300
+        return cached_token
+    else:
+        logger.error(f"Failed to get authentication token: {response.content}")
+        raise Exception("Failed to get authentication token")
+
 
 class RequestHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -82,25 +111,18 @@ def create_config_file():
 
 
 def wazuh_api(method, resource, data=None):
-    code = None
-    response_json = {}
-    login_headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Basic {b64encode(auth).decode()}",
-    }
-    response = requests.get(login_url, headers=login_headers, verify=False)  # nosec
-    logger.info(
-        f"Response code {response.status_code} response content {response.content}"
-    )
-    token = json.loads(response.content.decode())["data"]["token"]
-    requests_headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {token}",
-    }
-    url = f"{base_url}/{resource}"
-    try:
-        requests.packages.urllib3.disable_warnings()
+    global cached_token
 
+    try:
+        # Get the current token
+        token = get_auth_token()
+        
+        requests_headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        }
+        url = f"{base_url}/{resource}"
+        
         if method.lower() == "post":
             response = requests.post(
                 url, headers=requests_headers, data=json.dumps(data), verify=verify
@@ -123,9 +145,10 @@ def wazuh_api(method, resource, data=None):
 
     except Exception as exception:
         logger.error(f"Error: for resource {resource}, exception {exception}")
+        code = None
+        response_json = {}
 
     return code, response_json
-
 
 def check_self():
     process_name = os.path.basename(__file__)
@@ -143,6 +166,21 @@ def code_desc(http_status_code):
 
 
 def add_agent_to_group(wazuh_agent_id, agent_group):
+    # Retrieve the current list of groups for the agent
+    status_code, response = wazuh_api("get", f"agents?agents_list={wazuh_agent_id}")
+    response_msg = http_codes_serializer(response=response, status_code=status_code)
+
+    if status_code == 200 and response["error"] == 0:
+        # Extract the current groups from the response
+        current_groups = response["data"]["affected_items"][0].get("group", [])
+        
+        # Check if the agent is already in the specified group
+        if agent_group in current_groups:
+            logger.info(f"Wazuh agent ID {wazuh_agent_id} is already in group {agent_group}. Skipping addition.")
+            return
+
+    # Proceed to add the agent to the group if not already present
+    wait_time = os.environ.get("WAZUH_WAIT_TIME", default="30")
     status_code, response = wazuh_api(
         "put",
         f"agents/{wazuh_agent_id}/group/{agent_group}?pretty=true&wait_for_complete=true",
@@ -156,6 +194,8 @@ def add_agent_to_group(wazuh_agent_id, agent_group):
         return response
     else:
         logger.error(f"ERROR: Unable to add agent to group {response_msg}, retry")
+        logger.info(f"Will try to add agent to group again in {wait_time}, sleeping ......")
+        time.sleep(int(wait_time))
         add_agent_to_group(wazuh_agent_id, agent_group)
 
 
@@ -205,9 +245,10 @@ def add_agent(agt_name, agt_ip=None):
 def wazuh_agent_status(agt_name, pretty=None):
     wazuh_agnt_name = None
     wazuh_agnt_status = None
+    wazuh_agnt_id = None
     if pretty:
         status_code, response = wazuh_api(
-            "get", f"agents?pretty=true&q=name={agt_name}&wait_for_complete=true"
+            "get", f"   "
         )
     else:
         status_code, response = wazuh_api(
@@ -218,10 +259,12 @@ def wazuh_agent_status(agt_name, pretty=None):
         for items in response["data"]["affected_items"]:
             wazuh_agnt_name = items["name"]
             wazuh_agnt_status = items["status"]
+            wazuh_agnt_id = items["id"]
         logger.info(f"Wazuh agent status: {response_msg}")
-        return wazuh_agnt_name, wazuh_agnt_status
+        return wazuh_agnt_name, wazuh_agnt_status, wazuh_agnt_id
     else:
         logger.error(f"Unable to get Wazuh agent status: {response_msg}")
+        return None, None, None
 
 
 def wazuh_agent_import_key(wazuh_agent_key):
@@ -263,6 +306,20 @@ def restart_wazuh_agent():
     if not restarted:
         logger.error(f"error during restarting Wazuh agent: {command_stderr}")
 
+def get_agent_key(agent_id):
+    # Function to retrieve agent key
+    status_code, response = wazuh_api("get", f"agents/{agent_id}/key")
+    response_msg = http_codes_serializer(response=response, status_code=status_code)
+    agent_key = None
+    if status_code == 200 and response["error"] == 0:
+        for items in response["data"]["affected_items"]:
+            agent_key = items["key"]
+            logger.info(f"Agent key retrieved successfully for agent ID '{agent_id}'")
+            return agent_key
+        logger.error(f"Unable to retrieve agent key for agent ID '{agent_id}': {response_msg}")    
+    else:
+        logger.error(f"Failed to retrieve agent key for agent ID '{agent_id}': {response_msg}")
+        return None
 
 if __name__ == "__main__":
     logger.remove()
@@ -291,12 +348,22 @@ if __name__ == "__main__":
     auth = f"{user}:{password}".encode()
     verify = False
     create_config_file()
-    agent_id, agent_key = add_agent(node_name)
+    # Check if the agent exists before adding it
+    agent_name, agent_status, agent_id = wazuh_agent_status(node_name)
+    agent_key = None
+    if agent_id is None:
+        agent_id, agent_key = add_agent(node_name)
+    else:
+        logger.info(f"Wazuh agent '{agent_name}' already exists. Status: {agent_status}")
+        # If the agent already exists, retrieve the agent key
+        agent_key = get_agent_key(agent_id)
+    if agent_key is None:
+        raise ValueError("Failed to retrieve agent key.")
     wazuh_agent_import_key(agent_key.encode())
     restart_wazuh_agent()
     status = True
     while status:
-        agent_name, agent_status = wazuh_agent_status(node_name)
+        agent_name, agent_status, agent_id = wazuh_agent_status(node_name)
         if agent_status == "active":
             logger.info(
                 f"Wazuh agent '{agent_name}' is ready and connected,  status - '{agent_status}......"
@@ -309,6 +376,7 @@ if __name__ == "__main__":
             logger.info(
                 f"Waiting for Wazuh agent {agent_name} become ready current status is {agent_status}......"
             )
+            logger.info(f"Will check the agent status again in {wait_time}, sleeping....")
             time.sleep(int(wait_time))
     if groups == "default":
         pass

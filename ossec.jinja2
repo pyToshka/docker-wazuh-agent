@@ -1,13 +1,19 @@
+<!--
+  Wazuh - Agent - Default configuration for amzn 2
+  More info at: https://documentation.wazuh.com
+  Mailing list: https://groups.google.com/forum/#!forum/wazuh
+-->
+
 <ossec_config>
   <client>
     <server>
       <address>{{ join_manager_hostname }}</address>
       <port>{{ join_manager_port | default('1514', true) }}</port>
-      <!--protocol>tcp</protocol-->
+      <protocol>tcp</protocol>
     </server>
     <config-profile>ubuntu, ubuntu20, ubuntu20.04, ubuntu16, ubuntu16.04, centos, windows</config-profile>
     <notify_time>10</notify_time>
-    <time-reconnect>30</time-reconnect>
+    <time-reconnect>60</time-reconnect>
     <auto_restart>yes</auto_restart>
     <crypto_method>aes</crypto_method>
   </client>
@@ -46,54 +52,30 @@
     <!-- Frequency that rootcheck is executed - every 12 hours -->
     <frequency>43200</frequency>
 
-    <rootkit_files>/var/ossec/etc/shared/rootkit_files.txt</rootkit_files>
-    <rootkit_trojans>/var/ossec/etc/shared/rootkit_trojans.txt</rootkit_trojans>
+    <rootkit_files>etc/shared/rootkit_files.txt</rootkit_files>
+    <rootkit_trojans>etc/shared/rootkit_trojans.txt</rootkit_trojans>
 
     <skip_nfs>yes</skip_nfs>
-
   </rootcheck>
 
-  <wodle name="docker-listener">
-    <disabled>no</disabled>
-    <attempts>10</attempts>
-    <run_on_start>yes</run_on_start>
-    <interval>5m</interval>
-  </wodle>
-
-  <wodle name="open-scap">
-    <disabled>no</disabled>
+  <wodle name="cis-cat">
+    <disabled>yes</disabled>
     <timeout>1800</timeout>
     <interval>1d</interval>
     <scan-on-start>yes</scan-on-start>
 
-    <content type="xccdf" path="ssg-centos-7-ds.xml">
-      <profile>xccdf_org.ssgproject.content_profile_pci-dss</profile>
-      <profile>xccdf_org.ssgproject.content_profile_common</profile>
-    </content>
-  </wodle>
-
-  <wodle name="cis-cat">
-    <disabled>no</disabled>
-    <timeout>600</timeout>
-    <interval>15m</interval>
-    <scan-on-start>yes</scan-on-start>
-
-    <java_path>/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin</java_path>
+    <java_path>wodles/java</java_path>
     <ciscat_path>wodles/ciscat</ciscat_path>
-
-    <content type="xccdf" path="benchmarks/CIS_Ubuntu_Linux_16.04_LTS_Benchmark_v1.0.0-xccdf.xml">
-      <profile>xccdf_org.cisecurity.benchmarks_profile_Level_2_-_Server</profile>
-    </content>
-
   </wodle>
 
-  <!-- Virustotal inegration -->
-  <integration>
-    <name>virustotal</name>
-    <api_key>{{ virus_total_key }}</api_key> <!-- Replace with your VirusTotal API key -->
-    <group>syscheck</group>
-    <alert_format>json</alert_format>
-  </integration>
+  <!-- Osquery integration -->
+  <wodle name="osquery">
+    <disabled>yes</disabled>
+    <run_daemon>yes</run_daemon>
+    <log_path>/var/log/osquery/osqueryd.results.log</log_path>
+    <config_path>/etc/osquery/osquery.conf</config_path>
+    <add_labels>yes</add_labels>
+  </wodle>
 
   <!-- System inventory -->
   <wodle name="syscollector">
@@ -106,6 +88,11 @@
     <packages>yes</packages>
     <ports all="no">yes</ports>
     <processes>yes</processes>
+
+    <!-- Database synchronization settings -->
+    <synchronization>
+      <max_eps>10</max_eps>
+    </synchronization>
   </wodle>
 
   <sca>
@@ -114,21 +101,19 @@
     <interval>12h</interval>
     <skip_nfs>yes</skip_nfs>
   </sca>
+
   <!-- File integrity monitoring -->
   <syscheck>
     <disabled>no</disabled>
 
     <!-- Frequency that syscheck is executed default every 12 hours -->
-    <frequency>900</frequency>
+    <frequency>43200</frequency>
 
     <scan_on_start>yes</scan_on_start>
 
     <!-- Directories to check  (perform all possible verifications) -->
     <directories>/etc,/usr/bin,/usr/sbin</directories>
     <directories>/bin,/sbin,/boot</directories>
-    <directories check_all="yes" realtime="yes">/media/user/software</directories>
-    <directories check_all="yes" realtime="yes">/home</directories>
-    <directories check_all="yes" realtime="yes">/etc</directories>
 
     <!-- Files/directories to ignore -->
     <ignore>/etc/mtab</ignore>
@@ -159,59 +144,17 @@
     <process_priority>10</process_priority>
 
     <!-- Maximum output throughput -->
-    <max_eps>100</max_eps>
+    <max_eps>50</max_eps>
 
     <!-- Database synchronization settings -->
     <synchronization>
       <enabled>yes</enabled>
       <interval>5m</interval>
-      <max_interval>1h</max_interval>
       <max_eps>10</max_eps>
     </synchronization>
-
-    <!-- Maximum number of files to be monitored -->
-    <file_limit>
-        <enabled>no</enabled>
-        <entries>1000000</entries>
-    </file_limit>
   </syscheck>
 
   <!-- Log analysis -->
-  <localfile>
-    <log_format>apache</log_format>
-    <location>/var/log/nginx/access.log</location>
-  </localfile>
-
-  <localfile>
-    <log_format>apache</log_format>
-    <location>/var/log/nginx/error.log</location>
-  </localfile>
-
-  <localfile>
-    <log_format>syslog</log_format>
-    <location>/var/ossec/logs/active-responses.log</location>
-  </localfile>
-
-  <localfile>
-    <log_format>syslog</log_format>
-    <location>/var/log/auth.log</location>
-  </localfile>
-
-  <localfile>
-    <log_format>syslog</log_format>
-    <location>/var/log/syslog</location>
-  </localfile>
-
-  <localfile>
-    <log_format>syslog</log_format>
-    <location>/var/log/dpkg.log</location>
-  </localfile>
-
-  <localfile>
-    <log_format>syslog</log_format>
-    <location>/var/log/kern.log</location>
-  </localfile>
-
   <localfile>
     <log_format>command</log_format>
     <command>df -P</command>
@@ -231,15 +174,10 @@
     <frequency>360</frequency>
   </localfile>
 
-  <localfile>
-      <location>/var/log/*.log</location>
-      <log_format>syslog</log_format>
-  </localfile>
-
   <!-- Active response -->
   <active-response>
     <disabled>no</disabled>
-    <ca_store>/var/ossec/etc/wpk_root.pem</ca_store>
+    <ca_store>etc/wpk_root.pem</ca_store>
     <ca_verification>yes</ca_verification>
   </active-response>
 
@@ -247,5 +185,33 @@
   <logging>
     <log_format>plain</log_format>
   </logging>
+
+</ossec_config>
+
+<ossec_config>
+  <localfile>
+    <log_format>audit</log_format>
+    <location>/var/log/audit/audit.log</location>
+  </localfile>
+
+  <localfile>
+    <log_format>syslog</log_format>
+    <location>/var/ossec/logs/active-responses.log</location>
+  </localfile>
+
+  <localfile>
+    <log_format>syslog</log_format>
+    <location>/var/log/messages</location>
+  </localfile>
+
+  <localfile>
+    <log_format>syslog</log_format>
+    <location>/var/log/secure</location>
+  </localfile>
+
+  <localfile>
+    <log_format>syslog</log_format>
+    <location>/var/log/maillog</location>
+  </localfile>
 
 </ossec_config>

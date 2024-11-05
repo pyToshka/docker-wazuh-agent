@@ -14,7 +14,7 @@ except ModuleNotFoundError as e:
     sys.exit(1)
 
 older_than = "21d"
-
+k8s_base_url = "https://kubernetes.default.svc"
 
 def code_desc(http_status_code):
     return requests.status_codes._codes[http_status_code][0]
@@ -74,6 +74,13 @@ def cleanup_agent(older):
 
 if __name__ == "__main__":
     try:
+# Check if the file exists
+        if os.path.isfile('/var/run/secrets/kubernetes.io/serviceaccount/token'):
+            with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r') as file:
+                k8s_token = file.read().replace('\n', '')
+        else:
+            print("File not found")
+
         host = os.environ.get("JOIN_MANAGER_MASTER_HOST")
         port = os.environ.get("JOIN_MANAGER_API_PORT")
         protocol = os.environ.get("JOIN_MANAGER_PROTOCOL")

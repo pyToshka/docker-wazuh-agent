@@ -6,7 +6,7 @@ RUN install_packages python3-pip python3-setuptools python3-dev gcc && \
 FROM bitnami/minideb@sha256:bce8004f7da6547bc568e92895e1b3a3835e6dba48283fbbf9b3f66c1d166c6d
 LABEL maintainer="support@opennix.ru"
 LABEL description="Wazuh Docker Agent"
-ARG AGENT_VERSION="4.3.10-1"
+ARG AGENT_VERSION="4.7.2-1"
 ENV JOIN_MANAGER_MASTER_HOST=""
 ENV JOIN_MANAGER_WORKER_HOST=""
 ENV VIRUS_TOTAL_KEY=""
