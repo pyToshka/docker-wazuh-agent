@@ -112,28 +112,28 @@
     <scan_on_start>yes</scan_on_start>
 
     <!-- Directories to check  (perform all possible verifications) -->
-    <directories>/etc,/usr/bin,/usr/sbin</directories>
-    <directories>/bin,/sbin,/boot</directories>
+    <directories>/root/etc,/root/usr/bin,/root/usr/sbin</directories>
+    <directories>/root/bin,/root/sbin,/root/boot</directories>
 
     <!-- Files/directories to ignore -->
-    <ignore>/etc/mtab</ignore>
-    <ignore>/etc/hosts.deny</ignore>
-    <ignore>/etc/mail/statistics</ignore>
-    <ignore>/etc/random-seed</ignore>
-    <ignore>/etc/random.seed</ignore>
-    <ignore>/etc/adjtime</ignore>
-    <ignore>/etc/httpd/logs</ignore>
-    <ignore>/etc/utmpx</ignore>
-    <ignore>/etc/wtmpx</ignore>
-    <ignore>/etc/cups/certs</ignore>
-    <ignore>/etc/dumpdates</ignore>
-    <ignore>/etc/svc/volatile</ignore>
+    <ignore>/root/etc/mtab</ignore>
+    <ignore>/root/etc/hosts.deny</ignore>
+    <ignore>/root/etc/mail/statistics</ignore>
+    <ignore>/root/etc/random-seed</ignore>
+    <ignore>/root/etc/random.seed</ignore>
+    <ignore>/root/etc/adjtime</ignore>
+    <ignore>/root/etc/httpd/logs</ignore>
+    <ignore>/root/etc/utmpx</ignore>
+    <ignore>/root/etc/wtmpx</ignore>
+    <ignore>/root/etc/cups/certs</ignore>
+    <ignore>/root/etc/dumpdates</ignore>
+    <ignore>/root/etc/svc/volatile</ignore>
 
     <!-- File types to ignore -->
     <ignore type="sregex">.log$|.swp$</ignore>
 
     <!-- Check the file, but never compute the diff -->
-    <nodiff>/etc/ssl/private.key</nodiff>
+    <nodiff>/root/etc/ssl/private.key</nodiff>
 
     <skip_nfs>yes</skip_nfs>
     <skip_dev>yes</skip_dev>
