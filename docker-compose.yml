@@ -1,5 +1,4 @@
 # Wazuh App Copyright (C) 2017, Wazuh Inc. (License GPLv2)
-version: '3.9'  # optional since Compose v1.27.0
 services:
   wazuh-minideb-agent:
     build:
