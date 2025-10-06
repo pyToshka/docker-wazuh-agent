@@ -29,13 +29,13 @@ jobs:
         include:
           - dockerfile: ./Dockerfile
             image: wazuh-agent-minideb
-            wazuh_cluster_version: '4.7.0'
+            wazuh_cluster_version: '4.11.2'
           - dockerfile: ./images/Dockerfile.amazonlinux
             image: wazuh-agent-amazonlinux
-            wazuh_cluster_version: '4.7.0'
+            wazuh_cluster_version: '4.11.2'
           - dockerfile: ./images/Dockerfile.ubuntu
             image: wazuh-agent-ubuntu
-            wazuh_cluster_version: '4.7.0'
+            wazuh_cluster_version: '4.11.2'
 
    steps:
    - uses: actions/checkout@v3
@@ -78,10 +78,10 @@ jobs:
         fetch-depth: 0
     - name: Expose GitHub Runtime
       uses: crazy-max/ghaction-github-runtime@v3
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v3
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v6
       with:
-        python-version: "3.9"
+        python-version: "3.12"
         cache: 'pip'
     - name: Install dependencies
       run: |
@@ -105,9 +105,9 @@ jobs:
         AGENT_VERSION: "${{ matrix.wazuh_agent_version }}"
 
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: wazuh-unittests
+        name: wazuh-unittests-${{ strategy.job-index }}
         path: /tmp/test-results/wazuh-unittests-${{ matrix.wazuh_agent_version }}.xml
 
   integrations-tests:
@@ -116,7 +116,7 @@ jobs:
     strategy:
       matrix:
         wazuh_agent_version: ['4.3.10-1','4.4.5-1', '4.5.4-1','4.6.0-1','4.7.1-1','4.7.2-1']
-        wazuh_cluster_version: ['4.7.0']
+        wazuh_cluster_version: ['4.11.2']
         include:
           - image: wazuh-agent-minideb
           - image: wazuh-agent-amazonlinux
@@ -124,10 +124,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v3
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v6
       with:
-        python-version: "3.9"
+        python-version: "3.12"
         cache: 'pip'
 
     - name: Set up QEMU
@@ -148,16 +148,16 @@ jobs:
         key: docker-${{ matrix.wazuh_agent_version }}
 
     - name: Download artifact from build job
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
-        name: wazuh-unittests
+        name: wazuh-unittests-${{ strategy.job-index }}
         path: ${{ github.workspace }}/test-results/
 
     - name: Create single node certificates
-      run: docker-compose -f tests/single-node/generate-indexer-certs.yml run --rm generator
+      run: docker compose -f tests/single-node/generate-indexer-certs.yml run --rm generator
 
     - name: Start single node stack
-      run: docker-compose -f docker-compose.yml up -d --build
+      run: docker compose -f docker-compose.yml up -d --build
       env:
         AGENT_VERSION: "${{ matrix.wazuh_agent_version }}"
         WAZUH_CLUSTER_VERSION: "${{ matrix.wazuh_cluster_version }}"
@@ -203,4 +203,4 @@ jobs:
 
     - name: Stop containers and destroy
       if: always()
-      run: docker-compose -f docker-compose.yml down
+      run: docker compose -f docker-compose.yml down

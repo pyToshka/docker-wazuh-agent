@@ -1,10 +1,103 @@
 ARG TAG=@sha256:145bacc9db29ff9c9c021284e5b7b22f1193fc38556c578250c926cf3c883a13
-FROM ubuntu${TAG} as builder
-COPY requirements.txt /tmp
-RUN apt update && apt install python3-pip python3-setuptools python3-dev gcc -y && \
-     python3 -m pip wheel -w /tmp/wheel -r /tmp/requirements.txt
+FROM ubuntu${TAG}  AS base
+ENV PYENV_ROOT="/opt/pyenv"
+ENV PATH="${PYENV_ROOT}/shims:${PYENV_ROOT}/bin:$PATH"
+ENV LANG C.UTF-8
+RUN set -eux; \
+    export DEBIAN_FRONTEND=noninteractive; \
+    apt-get update --quiet; \
+    apt-get install --yes --no-install-recommends \
+        bzip2 \
+        ca-certificates \
+        curl \
+        git \
+        libexpat1 \
+        make build-essential libssl-dev zlib1g-dev \
+        libbz2-dev libreadline-dev libsqlite3-dev curl git \
+        libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev \
+    ; \
+    rm -rf /var/lib/apt/lists/*_dists_*
 
-FROM ubuntu${TAG}
+RUN set -eux; \
+    curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash; \
+    git clone https://github.com/momo-lab/xxenv-latest \
+        ${PYENV_ROOT}/plugins/xxenv-latest \
+    ; \
+    pyenv update
+
+
+FROM base AS builder
+RUN set -eux; \
+    export DEBIAN_FRONTEND=noninteractive; \
+    apt-get update --quiet; \
+    apt-get install --yes --no-install-recommends \
+        build-essential \
+        gdb \
+        lcov \
+        libbz2-dev \
+        libffi-dev \
+        libgdbm-compat-dev \
+        libgdbm-dev \
+        libncursesw5-dev \
+        $(apt-cache show libncurses-dev >/dev/null 2>&1 && echo libncurses-dev || true) \
+        libreadline6-dev \
+        libsqlite3-dev \
+        libssl-dev \
+        lzma-dev \
+        pkg-config \
+        xz-utils \
+        tk-dev \
+        uuid-dev \
+        libxml2-dev \
+        libxmlsec1-dev \
+        libffi-dev \
+        liblzma-dev \
+        zlib1g-dev \
+    ; \
+    rm -rf /var/lib/apt/lists/*_dists_*
+
+
+FROM builder AS build-all
+ENV PYENV_ROOT="/opt/pyenv"
+ENV PATH="${PYENV_ROOT}/shims:${PYENV_ROOT}/bin:$PATH"
+ENV LANG C.UTF-8
+ENV PYTHON_CFLAG="-march=native -mtune=native"
+ARG PYENV_VERSIONS="3.12"
+ARG ALLOW_FAILURES=
+
+RUN set -eux; \
+    for version in ${PYENV_VERSIONS}; do \
+        env PYTHON_CONFIGURE_OPTS=" \
+            --enable-shared \
+            --enable-loadable-sqlite-extensions \
+            --with-lto \
+            --with-system-expat \
+            --with-system-ffi \
+            --with-system-mpdec \
+            --enable-optimizations \
+            " \
+            pyenv install ${version} || test -n "${ALLOW_FAILURES}"; \
+    done; \
+    pyenv global $(pyenv versions --bare | tac); \
+    pyenv versions; \
+    \
+    find ${PYENV_ROOT}/versions -depth \
+        \( \
+            \( -type d -a \( -name test -o -name tests -o -name idle_test \) \) \
+            -o \( -type f -a \( -name '*.pyc' -o -name '*.pyo' -o -name '*.a' \) \) \
+            -o \( -type f -a -name 'wininst-*.exe' \) \
+        \) -exec rm -rf '{}' +
+
+
+FROM build-all AS agent
+ENV LANG C.UTF-8
+ENV PYENV_ROOT="/opt/pyenv"
+ENV PATH="${PYENV_ROOT}/shims:${PYENV_ROOT}/bin:$PATH"
+COPY requirements.txt /tmp
+RUN pyenv global 3.12 && apt update && apt install python3-pip python3-setuptools python3-dev gcc -y && \
+     python -m pip wheel -w /tmp/wheel -r /tmp/requirements.txt
+
+FROM base
 LABEL maintainer="support@opennix.ru"
 LABEL description="Ubuntu 24.04 Wazuh Docker Agent"
 ARG AGENT_VERSION="4.3.10-1"
@@ -19,11 +112,19 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PIP_ROOT_USER_ACTION=ignore
+ENV PYENV_ROOT="/opt/pyenv"
+ENV PATH="${PYENV_ROOT}/shims:${PYENV_ROOT}/bin:$PATH"
+ENV LANG C.UTF-8
 ENV TZ=Etc/UTC
 COPY *.py *.jinja2  /var/ossec/
 WORKDIR /var/ossec/
-COPY --from=builder /tmp/wheel /tmp/wheel
-RUN apt update && apt install -y procps curl apt-transport-https gnupg2 inotify-tools python3-docker python3-setuptools python3-pip && \
+COPY --from=agent /tmp/wheel /tmp/wheel
+COPY --from=build-all ${PYENV_ROOT}/versions/ ${PYENV_ROOT}/versions/
+
+RUN pyenv rehash; \
+    pyenv global 3.12; \
+    pyenv versions && \
+    apt update && apt install -y procps curl apt-transport-https gnupg2 inotify-tools python3-docker python3-setuptools python3-pip && \
   curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - && \
   echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list && \
   apt update && apt install -y wazuh-agent=${AGENT_VERSION}  && \
@@ -31,8 +132,8 @@ RUN apt update && apt install -y procps curl apt-transport-https gnupg2 inotify-
   apt install -y openjdk-11-jdk
 COPY *.py *.jinja2  /var/ossec/
 WORKDIR /var/ossec/
-COPY --from=builder /tmp/wheel /tmp/wheel
-RUN pip3 install --break-system-packages --no-index /tmp/wheel/*.whl && \
+COPY --from=agent /tmp/wheel /tmp/wheel
+RUN pyenv global 3.12 && pip3 install --no-index /tmp/wheel/*.whl && \
   chmod +x /var/ossec/deregister_agent.py && \
   chmod +x /var/ossec/register_agent.py && \
   apt-get clean autoclean && \
