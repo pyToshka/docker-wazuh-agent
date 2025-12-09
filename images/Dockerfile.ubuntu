@@ -32,7 +32,7 @@ RUN apt update && apt install -y procps curl apt-transport-https gnupg2 inotify-
 COPY *.py *.jinja2  /var/ossec/
 WORKDIR /var/ossec/
 COPY --from=builder /tmp/wheel /tmp/wheel
-RUN pip3 install --break-system-packages --no-index /tmp/wheel/*.whl && \
+RUN pip3 install --ignore-installed --break-system-packages --no-index /tmp/wheel/*.whl && \
   chmod +x /var/ossec/deregister_agent.py && \
   chmod +x /var/ossec/register_agent.py && \
   apt-get clean autoclean && \
