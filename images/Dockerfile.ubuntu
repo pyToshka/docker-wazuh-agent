@@ -7,7 +7,7 @@ RUN apt update && apt install python3-pip python3-setuptools python3-dev gcc -y 
 FROM ubuntu${TAG}
 LABEL maintainer="support@opennix.ru"
 LABEL description="Ubuntu 24.04 Wazuh Docker Agent"
-ARG AGENT_VERSION="4.3.10-1"
+ARG AGENT_VERSION="4.14.1-1"
 ENV JOIN_MANAGER_MASTER_HOST=""
 ENV JOIN_MANAGER_WORKER_HOST=""
 ENV VIRUS_TOTAL_KEY=""
