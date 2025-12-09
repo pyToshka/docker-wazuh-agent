@@ -20,17 +20,11 @@ jobs:
       matrix:
         include:
           - dockerfile: ./Dockerfile
-            image: kennyopennix/wazuh-agent
+            image: wazuh-agent
           - dockerfile: ./images/Dockerfile.amazonlinux
-            image: kennyopennix/wazuh-agent-amazonlinux
+            image: wazuh-agent-amazonlinux
           - dockerfile: ./images/Dockerfile.ubuntu
-            image: kennyopennix/wazuh-agent-ubuntu
-          - dockerfile: ./Dockerfile
-            image: opennix/wazuh-agent
-          - dockerfile: ./images/Dockerfile.amazonlinux
-            image: opennix/wazuh-agent-amazonlinux
-          - dockerfile: ./images/Dockerfile.ubuntu
-            image: opennix/wazuh-agent-ubuntu
+            image: wazuh-agent-ubuntu
     steps:
 
       - name: Checkout
@@ -70,7 +64,7 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ matrix.image }}:${{ env.TAG_NAME }}
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ matrix.image }}:${{ env.TAG_NAME }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
               AGENT_VERSION=${{ env.AGENT_VERSION }}
