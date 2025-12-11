@@ -14,11 +14,17 @@ jobs:
       matrix:
         include:
           - dockerfile: ./Dockerfile
-            image: wazuh-agent
+            image: kennyopennix/wazuh-agent
           - dockerfile: ./images/Dockerfile.amazonlinux
-            image: wazuh-agent-amazonlinux
+            image: kennyopennix/wazuh-agent-amazonlinux
           - dockerfile: ./images/Dockerfile.ubuntu
-            image: wazuh-agent-ubuntu
+            image: kennyopennix/wazuh-agent-ubuntu
+          - dockerfile: ./Dockerfile
+            image: opennix/wazuh-agent
+          - dockerfile: ./images/Dockerfile.amazonlinux
+            image: opennix/wazuh-agent-amazonlinux
+          - dockerfile: ./images/Dockerfile.ubuntu
+            image: opennix/wazuh-agent-ubuntu
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,7 +44,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ matrix.image }}
+          images: ${{ matrix.image }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=semver,pattern={{version}}
