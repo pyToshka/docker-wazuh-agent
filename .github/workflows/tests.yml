@@ -111,7 +111,6 @@ jobs:
     permissions:
       contents: read
       issues: read
-      checks: write
       pull-requests: write
     needs: ["pyunit-tests"]
     runs-on: ubuntu-latest
