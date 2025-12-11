@@ -13,11 +13,7 @@ on:
     tags:
       - 'v*.*.*'
 
-permissions:
-  contents: read
-  issues: read
-  checks: write
-  pull-requests: write
+permissions: read-all
 
 jobs:
   test-docker-build:
@@ -111,6 +107,11 @@ jobs:
         path: /tmp/test-results/wazuh-unittests-${{ matrix.wazuh_agent_version }}.xml
 
   integrations-tests:
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
     needs: ["pyunit-tests"]
     runs-on: ubuntu-latest
     strategy:
