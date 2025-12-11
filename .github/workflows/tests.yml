@@ -21,23 +21,36 @@ jobs:
    strategy:
       max-parallel: 6
       matrix:
-        wazuh_agent_version: ['4.3.10-1','4.4.5-1', '4.5.4-1', '4.6.0-1', '4.7.1-1', '4.7.2-1', '4.11.1-1', '4.14.1-1']
+        wazuh_agent_version: ['4.3.10-1', '4.4.5-1', '4.5.4-1', '4.6.0-1', '4.7.1-1', '4.7.2-1', '4.11.1-1', '4.14.1-1']
+        dockerfile:
+          - path: './Dockerfile'
+            image: 'wazuh-agent-minideb'
+          - path: './images/Dockerfile.amazonlinux'
+            image: 'wazuh-agent-amazonlinux'
+          - path: './images/Dockerfile.ubuntu'
+            image: 'wazuh-agent-ubuntu'
         include:
-          - dockerfile: ./Dockerfile
-            image: wazuh-agent-minideb
+          # Old agents: 4.7.0 cluster
+          - wazuh_agent_version: '4.3.10-1'
             wazuh_cluster_version: '4.7.0'
-          - dockerfile: ./images/Dockerfile.amazonlinux
-            image: wazuh-agent-amazonlinux
+          - wazuh_agent_version: '4.4.5-1'
             wazuh_cluster_version: '4.7.0'
-          - dockerfile: ./images/Dockerfile.ubuntu
-            image: wazuh-agent-ubuntu
+          - wazuh_agent_version: '4.5.4-1'
             wazuh_cluster_version: '4.7.0'
+          - wazuh_agent_version: '4.6.0-1'
+            wazuh_cluster_version: '4.7.0'
+          - wazuh_agent_version: '4.7.1-1'
+            wazuh_cluster_version: '4.7.0'
+          - wazuh_agent_version: '4.7.2-1'
+            wazuh_cluster_version: '4.7.0'
+          # New agents: 4.10.0 cluster
+          - wazuh_agent_version: '4.11.1-1'
+            wazuh_cluster_version: '4.10.0'
+          - wazuh_agent_version: '4.14.1-1'
+            wazuh_cluster_version: '4.10.0'
 
    steps:
    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-
-   - name: Expose GitHub Runtime
-     uses: crazy-max/ghaction-github-runtime@3cb05d89e1f492524af3d41a1c98c83bc3025124 # v3.1.0
 
    - name: Set up QEMU
      uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
@@ -45,15 +58,19 @@ jobs:
    - name: Set up Docker Buildx
      uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
-   - name: Cache Docker images.
-     uses: ScribeMD/docker-cache@fb28c93772363301b8d0a6072ce850224b73f74e # v0.5.0
+   - name: Build Wazuh Agent image
+     uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
      with:
-       key: docker-${{ matrix.wazuh_agent_version }}
+       context: .
+       file: ${{ matrix.dockerfile.path }}
+       build-args: AGENT_VERSION=${{ matrix.wazuh_agent_version }}
+       tags: ${{ matrix.dockerfile.image }}:${{ matrix.wazuh_agent_version }}
+       load: true
+       cache-from: type=gha,scope=build-${{ matrix.dockerfile.image }}
+       cache-to: type=gha,mode=max,scope=build-${{ matrix.dockerfile.image }}
 
-   - name: Build and Save Wazuh Agent base image
+   - name: Pull Wazuh cluster images
      run: |
-        mkdir -p ${{ github.workspace }}/docker-images/
-        docker build -t  ${{ matrix.image }}:${{ matrix.wazuh_agent_version }} -f ${{ matrix.dockerfile }} --build-arg AGENT_VERSION=${{ matrix.wazuh_agent_version }} .
         docker pull wazuh/wazuh-manager:${{ matrix.wazuh_cluster_version }}
         docker pull wazuh/wazuh-indexer:${{ matrix.wazuh_cluster_version }}
         docker pull wazuh/wazuh-dashboard:${{ matrix.wazuh_cluster_version }}
@@ -73,8 +90,6 @@ jobs:
     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       with:
         fetch-depth: 0
-    - name: Expose GitHub Runtime
-      uses: crazy-max/ghaction-github-runtime@3cb05d89e1f492524af3d41a1c98c83bc3025124 # v3.1.0
     - name: Set up Python 3.9
       uses: actions/setup-python@3542bca2639a428e1796aaa6a2ffef0c0f575566 # v3.1.4
       with:
@@ -87,11 +102,6 @@ jobs:
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
-    - name: Cache Docker images.
-      uses: ScribeMD/docker-cache@fb28c93772363301b8d0a6072ce850224b73f74e # v0.5.0
-      with:
-        key: docker-${{ matrix.wazuh_agent_version }}
 
     - name: Test with pytest
       run: |
@@ -114,12 +124,27 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        wazuh_agent_version: ['4.3.10-1','4.4.5-1', '4.5.4-1','4.6.0-1','4.7.1-1','4.7.2-1', '4.11.1-1', '4.14.1-1']
-        wazuh_cluster_version: ['4.7.0']
+        wazuh_agent_version: ['4.3.10-1', '4.4.5-1', '4.5.4-1', '4.6.0-1', '4.7.1-1', '4.7.2-1', '4.11.1-1', '4.14.1-1']
+        image: ['wazuh-agent-minideb', 'wazuh-agent-amazonlinux', 'wazuh-agent-ubuntu']
         include:
-          - image: wazuh-agent-minideb
-          - image: wazuh-agent-amazonlinux
-          - image: wazuh-agent-ubuntu
+          # Old agents → 4.7.0 cluster
+          - wazuh_agent_version: '4.3.10-1'
+            wazuh_cluster_version: '4.7.0'
+          - wazuh_agent_version: '4.4.5-1'
+            wazuh_cluster_version: '4.7.0'
+          - wazuh_agent_version: '4.5.4-1'
+            wazuh_cluster_version: '4.7.0'
+          - wazuh_agent_version: '4.6.0-1'
+            wazuh_cluster_version: '4.7.0'
+          - wazuh_agent_version: '4.7.1-1'
+            wazuh_cluster_version: '4.7.0'
+          - wazuh_agent_version: '4.7.2-1'
+            wazuh_cluster_version: '4.7.0'
+          # New agents → 4.10.0 cluster
+          - wazuh_agent_version: '4.11.1-1'
+            wazuh_cluster_version: '4.10.0'
+          - wazuh_agent_version: '4.14.1-1'
+            wazuh_cluster_version: '4.10.0'
     steps:
     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
@@ -139,11 +164,6 @@ jobs:
       run: |
         pip install --require-hashes -r requirements-dev.txt
         mkdir -p ${{ github.workspace }}/docker-images/
-
-    - name: Cache Docker images.
-      uses: ScribeMD/docker-cache@fb28c93772363301b8d0a6072ce850224b73f74e # v0.5.0
-      with:
-        key: docker-${{ matrix.wazuh_agent_version }}
 
     - name: Download artifact from build job
       uses: actions/download-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
