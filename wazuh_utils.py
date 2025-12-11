@@ -62,17 +62,16 @@ def wazuh_request(method, resource, auth_context, data=None, timeout: float | No
         }
         
         url = f"{auth_context['base_url']}/{resource}"
-        requests.packages.urllib3.disable_warnings()
-
         method_lower = method.lower()
         verify = auth_context['verify']
+
 
         if method_lower == "post":
             r = requests.post(url, headers=requests_headers, data=json.dumps(data), verify=verify, timeout=effective_timeout)
         elif method_lower == "put":
-            r = requests.put(url, headers=requests_headers, data=data, verify=verify, timeout=effective_timeout)
+            r = requests.put(url, headers=requests_headers, data=json.dumps(data) if data else None, verify=verify, timeout=effective_timeout)
         elif method_lower == "delete":
-            r = requests.delete(url, headers=requests_headers, data=data, verify=verify, timeout=effective_timeout)
+            r = requests.delete(url, headers=requests_headers, data=json.dumps(data) if data else None, verify=verify, timeout=effective_timeout)
         else:
             r = requests.get(url, headers=requests_headers, params=data, verify=verify, timeout=effective_timeout)
 
@@ -116,7 +115,7 @@ def get_auth_context():
             "auth": auth,
             "verify": verify
         }
-    except Exception as e:
+    except (TypeError, AttributeError) as e:
         logger.error(f"Error creating auth context: {e}")
         sys.exit(2)
 
@@ -134,4 +133,4 @@ def process_deleted_agents(response, auth_context):
             )
             msg = json.dumps(response_del, indent=4, sort_keys=True)
             code = f"Status: {status_code} - {code_desc(status_code)}"
-            logger.error(f"INFO - DELETE AGENT:\n{code}\n{msg}")
+            logger.info(f"DELETE AGENT:\n{code}\n{msg}")

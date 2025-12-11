@@ -87,12 +87,11 @@ def create_config_file():
 
 def delete_agent(agt_name):
     status_code, response = wazuh_request("get", f"agents?pretty=true&q=name={agt_name}", auth_context)
-    print(response, status_code)
     for items in response["data"]["affected_items"]:
-        print(f"Item {items}")
-        status_code, response = wazuh_api(
+        status_code, response = wazuh_request(
             "delete",
             f"agents?pretty=true&older_than=0s&agents_list={items['id']}&status=all",
+            auth_context
         )
         msg = json.dumps(response, indent=4, sort_keys=True)
         code = f"Status: {status_code} - {code_desc(status_code)}"
@@ -103,9 +102,10 @@ def delete_agent(agt_name):
         auth_context
     )
     for items in response["data"]["affected_items"]:
-        status_code, response = wazuh_api(
+        status_code, response = wazuh_request(
             "delete",
             f"agents?pretty=true&older_than=0s&agents_list={items['id']}&status=all",
+            auth_context
         )
         msg = json.dumps(response, indent=4, sort_keys=True)
         code = f"Status: {status_code} - {code_desc(status_code)}"
@@ -139,7 +139,7 @@ def get_agent_id(agt_name):
             return None
 
 
-def add_agent_to_group(wazuh_agent_id, agent_group):
+def add_agent_to_group(wazuh_agent_id, agent_group, retries=3):
     status_code, response = wazuh_request(
         "put",
         f"agents/{wazuh_agent_id}/group/{agent_group}?pretty=true&wait_for_complete=true",
@@ -154,7 +154,10 @@ def add_agent_to_group(wazuh_agent_id, agent_group):
         return response
     else:
         logger.error(f"ERROR: Unable to add agent to group {response_msg}, retry")
-        add_agent_to_group(wazuh_agent_id, agent_group)
+        if retries > 0:
+            add_agent_to_group(wazuh_agent_id, agent_group, retries - 1)
+        else:
+            logger.error("Failed to add agent to group after max retries")
 
 
 def add_agent(agt_name, agt_ip=None):
