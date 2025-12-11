@@ -127,7 +127,7 @@ jobs:
         wazuh_agent_version: ['4.3.10-1', '4.4.5-1', '4.5.4-1', '4.6.0-1', '4.7.1-1', '4.7.2-1', '4.11.1-1', '4.14.1-1']
         image: ['wazuh-agent-minideb', 'wazuh-agent-amazonlinux', 'wazuh-agent-ubuntu']
         include:
-          # Old agents → 4.7.0 cluster
+          # Old agents: 4.7.0 cluster
           - wazuh_agent_version: '4.3.10-1'
             wazuh_cluster_version: '4.7.0'
           - wazuh_agent_version: '4.4.5-1'
@@ -140,7 +140,7 @@ jobs:
             wazuh_cluster_version: '4.7.0'
           - wazuh_agent_version: '4.7.2-1'
             wazuh_cluster_version: '4.7.0'
-          # New agents → 4.10.0 cluster
+          # New agents: 4.10.0 cluster
           - wazuh_agent_version: '4.11.1-1'
             wazuh_cluster_version: '4.10.0'
           - wazuh_agent_version: '4.14.1-1'
