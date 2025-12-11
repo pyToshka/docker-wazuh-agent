@@ -4,7 +4,7 @@ from loguru import logger
 from wazuh_utils import wazuh_request, code_desc, get_auth_context, process_deleted_agents
 
 def cleanup_agent(older, auth_context):
-    status_code, response = wazuh_request(
+    _, response = wazuh_request(
         "delete",
         f"agents?pretty=true&older_than={older}&agents_list=all&status=never_connected,"
         f"disconnected",

@@ -20,9 +20,7 @@ ENV PYTHONUNBUFFERED=1
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PIP_ROOT_USER_ACTION=ignore
 ENV TZ=Etc/UTC
-COPY *.py *.jinja2  /var/ossec/
-WORKDIR /var/ossec/
-COPY --from=builder /tmp/wheel /tmp/wheel
+
 RUN apt update && apt install -y \
   procps \
   curl \
@@ -33,14 +31,20 @@ RUN apt update && apt install -y \
   python3-setuptools \
   python3-pip && \
   curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - && \
-  echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list && \
+  echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | \
+  tee /etc/apt/sources.list.d/wazuh.list && \
   apt update && apt install -y wazuh-agent=${AGENT_VERSION}  && \
   mkdir -p /usr/share/man/man1 && \
   apt install -y openjdk-11-jdk
+
 COPY *.py *.jinja2  /var/ossec/
 WORKDIR /var/ossec/
 COPY --from=builder /tmp/wheel /tmp/wheel
-RUN pip3 install --ignore-installed --break-system-packages --no-index /tmp/wheel/*.whl && \
+
+RUN pip3 install \
+  --ignore-installed \
+  --break-system-packages \
+  --no-index /tmp/wheel/*.whl && \
   chmod +x /var/ossec/deregister_agent.py && \
   chmod +x /var/ossec/register_agent.py && \
   apt-get clean autoclean && \
