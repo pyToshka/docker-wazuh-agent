@@ -347,7 +347,7 @@ if __name__ == "__main__":
             )
             time.sleep(int(wait_time))
     if groups != "default":
-        for group in list(groups.split(",")):
+        for group in groups.split(","):
             add_agent_to_group(agent_id, group)
     logger.info("Listening on 0.0.0.0:5000")
     server = HTTPServer(("0.0.0.0", 5000), RequestHandler)

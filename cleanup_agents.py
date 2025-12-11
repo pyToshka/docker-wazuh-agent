@@ -25,7 +25,7 @@ def req(method, resource, data=None):
         "Content-Type": "application/json",
         "Authorization": f"Basic {b64encode(auth).decode()}",
     }
-    response = requests.get(login_url, headers=login_headers, verify=False)  # nosec
+    response = requests.get(login_url, headers=login_headers, verify=verify)
     token = json.loads(response.content.decode())["data"]["token"]
     requests_headers = {
         "Content-Type": "application/json",
@@ -82,7 +82,7 @@ if __name__ == "__main__":
         node_name = os.environ.get("NODE_NAME")
         older_than = os.environ.get("OLDER_THAN")
         login_endpoint = "security/user/authenticate"
-        verify = False
+        verify = os.environ.get("WAZUH_API_SSL_VERIFY", "False").lower() in ("true", "1", "yes")
         base_url = f"{protocol}://{host}:{port}"
         login_url = f"{protocol}://{host}:{port}/{login_endpoint}"
         auth = f"{user}:{password}".encode()

@@ -23,7 +23,7 @@ def req(method, resource, data=None):
         "Content-Type": "application/json",
         "Authorization": f"Basic {b64encode(auth).decode()}",
     }
-    response = requests.get(login_url, headers=login_headers, verify=False)  # nosec
+    response = requests.get(login_url, headers=login_headers, verify=verify)
     token = json.loads(response.content.decode())["data"]["token"]
     requests_headers = {
         "Content-Type": "application/json",
@@ -95,6 +95,6 @@ if __name__ == "__main__":
     except KeyError as error:
         logger.error(f"Please check system variable {error}")
         exit(2)
-    verify = False
+    verify = os.environ.get("WAZUH_API_SSL_VERIFY", "False").lower() in ("true", "1", "yes")
     logger.info(f"Delete agent {node_name}")
     delete_agent(node_name)
