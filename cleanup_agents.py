@@ -1,7 +1,7 @@
 import json
 import os
 from loguru import logger
-from wazuh_utils import wazuh_request, code_desc, get_auth_context
+from wazuh_utils import wazuh_request, code_desc, get_auth_context, process_deleted_agents
 
 def cleanup_agent(older, auth_context):
     status_code, response = wazuh_request(
@@ -10,16 +10,7 @@ def cleanup_agent(older, auth_context):
         f"disconnected",
         auth_context
     )
-    if "data" in response and "affected_items" in response["data"]:
-        for items in response["data"]["affected_items"]:
-            status_code, response = wazuh_request(
-                "delete",
-                f"agents?pretty=true&older_than=0s&agents_list={items['id']}&status=all",
-                auth_context
-            )
-            msg = json.dumps(response, indent=4, sort_keys=True)
-            code = f"Status: {status_code} - {code_desc(status_code)}"
-            logger.error(f"INFO - DELETE AGENT:\n{code}\n{msg}")
+    process_deleted_agents(response, auth_context)
 
 
 if __name__ == "__main__":

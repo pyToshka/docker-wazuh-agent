@@ -100,3 +100,19 @@ def get_auth_context():
     except Exception as e:
         logger.error(f"Error creating auth context: {e}")
         sys.exit(2)
+
+
+def process_deleted_agents(response, auth_context):
+    """
+    Iterates over affected_items in the response and deletes them using the Wazuh API.
+    """
+    if "data" in response and "affected_items" in response["data"]:
+        for items in response["data"]["affected_items"]:
+            status_code, response_del = wazuh_request(
+                "delete",
+                f"agents?pretty=true&older_than=0s&agents_list={items['id']}&status=all",
+                auth_context
+            )
+            msg = json.dumps(response_del, indent=4, sort_keys=True)
+            code = f"Status: {status_code} - {code_desc(status_code)}"
+            logger.error(f"INFO - DELETE AGENT:\n{code}\n{msg}")
