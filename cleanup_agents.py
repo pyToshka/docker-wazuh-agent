@@ -14,11 +14,7 @@ def cleanup_agent(older, auth_context):
 
 
 if __name__ == "__main__":
-    try:
-        auth_context = get_auth_context()
-        older_than = os.environ.get("OLDER_THAN") or "21d"
-        
-        cleanup_agent(older_than, auth_context)
-    except KeyError as error:
-        logger.error(f"Please check system variable {error}")
-        exit(2)
+    auth_context = get_auth_context()
+    older_than = os.environ.get("OLDER_THAN") or "21d"
+    
+    cleanup_agent(older_than, auth_context)

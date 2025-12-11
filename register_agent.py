@@ -16,6 +16,7 @@ import time
 
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from wazuh_utils import code_desc
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 try:
@@ -167,10 +168,6 @@ def check_self():
 
 
 health.add_check(check_self)
-
-
-def code_desc(http_status_code):
-    return requests.status_codes.codes[http_status_code]
 
 
 def get_agent_id(agt_name):
@@ -347,7 +344,10 @@ if __name__ == "__main__":
             )
             time.sleep(int(wait_time))
     if groups != "default":
-        for group in groups.split(","):
+        for raw_group in groups.split(","):
+            group = raw_group.strip()
+            if not group:
+                continue
             add_agent_to_group(agent_id, group)
     logger.info("Listening on 0.0.0.0:5000")
     server = HTTPServer(("0.0.0.0", 5000), RequestHandler)

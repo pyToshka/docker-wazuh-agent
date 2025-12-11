@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from loguru import logger
 from wazuh_utils import wazuh_request, code_desc, get_auth_context, process_deleted_agents
 
@@ -16,17 +17,12 @@ def delete_agent(agt_name, auth_context):
 
 
 if __name__ == "__main__":
-    try:
-        auth_context = get_auth_context()
-        node_name = os.environ.get("NODE_NAME") or os.environ.get("HOSTNAME")
-        
-        if not node_name:
-             logger.error("NODE_NAME or HOSTNAME not set")
-             exit(2)
-
-    except KeyError as error:
-        logger.error(f"Please check system variable {error}")
-        exit(2)
+    auth_context = get_auth_context()
+    node_name = os.environ.get("NODE_NAME") or os.environ.get("HOSTNAME")
+    
+    if not node_name:
+         logger.error("NODE_NAME or HOSTNAME not set")
+         sys.exit(2)
 
     logger.info(f"Delete agent {node_name}")
     delete_agent(node_name, auth_context)

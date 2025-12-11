@@ -3,6 +3,7 @@ import os
 import sys
 from base64 import b64encode
 
+from http import HTTPStatus
 import requests
 import urllib3
 from loguru import logger
@@ -10,11 +11,16 @@ from loguru import logger
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-def code_desc(http_status_code):
-    return requests.status_codes._codes[http_status_code][0]
+def code_desc(http_status_code: int) -> str:
+    try:
+        return HTTPStatus(http_status_code).phrase
+    except ValueError:
+        return "Unknown Status"
 
 
-def wazuh_request(method, resource, auth_context, data=None):
+DEFAULT_TIMEOUT = float(os.environ.get("WAZUH_API_TIMEOUT", "10.0"))
+
+def wazuh_request(method, resource, auth_context, data=None, timeout: float | None = None):
     """
     Executes a request to the Wazuh API.
     
@@ -22,6 +28,7 @@ def wazuh_request(method, resource, auth_context, data=None):
     :param resource: API resource path
     :param auth_context: Dictionary containing login_url, base_url, auth, and verify
     :param data: Data to send (optional)
+    :param timeout: Timeout for the request in seconds (optional)
     :return: (status_code, response_json)
     """
     login_headers = {
@@ -30,11 +37,13 @@ def wazuh_request(method, resource, auth_context, data=None):
     }
     
     try:
+        effective_timeout = timeout or DEFAULT_TIMEOUT
         # Initial login to get token
         response = requests.get(
             auth_context['login_url'], 
             headers=login_headers, 
-            verify=auth_context['verify']
+            verify=auth_context['verify'],
+            timeout=effective_timeout
         )
         # Check if login was successful
         if response.status_code != 200:
@@ -55,18 +64,18 @@ def wazuh_request(method, resource, auth_context, data=None):
         verify = auth_context['verify']
 
         if method_lower == "post":
-            r = requests.post(url, headers=requests_headers, data=json.dumps(data), verify=verify)
+            r = requests.post(url, headers=requests_headers, data=json.dumps(data), verify=verify, timeout=effective_timeout)
         elif method_lower == "put":
-            r = requests.put(url, headers=requests_headers, data=data, verify=verify)
+            r = requests.put(url, headers=requests_headers, data=data, verify=verify, timeout=effective_timeout)
         elif method_lower == "delete":
-            r = requests.delete(url, headers=requests_headers, data=data, verify=verify)
+            r = requests.delete(url, headers=requests_headers, data=data, verify=verify, timeout=effective_timeout)
         else:
-            r = requests.get(url, headers=requests_headers, params=data, verify=verify)
+            r = requests.get(url, headers=requests_headers, params=data, verify=verify, timeout=effective_timeout)
 
         return r.status_code, r.json()
 
-    except Exception as exception:
-        logger.error(f"Error: {resource} {exception}")
+    except requests.RequestException as exception:
+        logger.error(f"HTTP error for resource {resource}: {exception}")
         sys.exit(1)
 
 
@@ -79,11 +88,17 @@ def get_auth_context():
         user = os.environ.get("JOIN_MANAGER_USER")
         password = os.environ.get("JOIN_MANAGER_PASSWORD")
         
-        if not all([host, port, protocol, user, password]):
-             # Just return existing env vars, let the caller validation handle missing ones if needed
-             # But strictly speaking, the caller's validation logic might differ.
-             # We will stick to creating the context object.
-             pass
+        missing = [name for name, value in [
+            ("JOIN_MANAGER_MASTER_HOST", host),
+            ("JOIN_MANAGER_API_PORT", port),
+            ("JOIN_MANAGER_PROTOCOL", protocol),
+            ("JOIN_MANAGER_USER", user),
+            ("JOIN_MANAGER_PASSWORD", password),
+        ] if not value]
+        
+        if missing:
+            logger.error(f"Missing required environment variables: {', '.join(missing)}")
+            sys.exit(2)
 
         login_endpoint = "security/user/authenticate"
         base_url = f"{protocol}://{host}:{port}"
