@@ -25,6 +25,12 @@ jobs:
             image: opennix/wazuh-agent-amazonlinux
           - dockerfile: ./images/Dockerfile.ubuntu
             image: opennix/wazuh-agent-ubuntu
+          - dockerfile: ./Dockerfile
+            image: kinseii/wazuh-agent
+          - dockerfile: ./images/Dockerfile.amazonlinux
+            image: kinseii/wazuh-agent-amazonlinux
+          - dockerfile: ./images/Dockerfile.ubuntu
+            image: kinseii/wazuh-agent-ubuntu
     steps:
       - name: Checkout
         uses: actions/checkout@v4
