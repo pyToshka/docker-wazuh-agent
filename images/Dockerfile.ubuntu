@@ -1,4 +1,4 @@
-ARG TAG=:24.04
+ARG TAG=@sha256:c35e29c9450151419d9448b0fd75374fec4fff364a27f176fb458d472dfc9e54
 FROM ubuntu${TAG} as builder
 COPY requirements.txt /tmp
 RUN apt update && apt install python3-pip python3-setuptools python3-dev gcc -y && \
