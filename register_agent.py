@@ -121,7 +121,7 @@ def wazuh_api(method, resource, data=None):
         "Content-Type": "application/json",
         "Authorization": f"Basic {b64encode(auth).decode()}",
     }
-    response = session.get(login_url, headers=login_headers, verify=False)  # nosec
+    response = session.get(login_url, headers=login_headers, verify=verify)
     logger.info(
         f"Response code {response.status_code} response content {response.content}"
     )
@@ -325,7 +325,7 @@ if __name__ == "__main__":
     base_url = f"{protocol}://{host}:{port}"
     login_url = f"{protocol}://{host}:{port}/{login_endpoint}"
     auth = f"{user}:{password}".encode()
-    verify = False
+    verify = os.environ.get("WAZUH_API_SSL_VERIFY", "False").lower() in ("true", "1", "yes")
     create_config_file()
     agent_id, agent_key = add_agent(node_name)
     wazuh_agent_import_key(agent_key.encode())
