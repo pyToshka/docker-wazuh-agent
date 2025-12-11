@@ -50,7 +50,7 @@ tomli==2.3.0 \
     --hash=sha256:64be704a875d2a59753d80ee8a533c3fe183e3f06807ff7dc2232938ccb01549 \
     --hash=sha256:e5c7ec1d37c2183ce7df6c76ddf0e3d48ada85e3660c31ebfadbcd6f59c63a0e
 exceptiongroup==1.3.0 \
-    --hash=sha256:4ebba6bacd69e4e99a26e8f6c8dc08a63ef63f02e44d543bf18cee7ba0ab7617 \
+    --hash=sha256:4d111e6e0c13d0644cad6ddaa7ed0261a0b36971f6d23e7ec9b4b9097da78a10 \
     --hash=sha256:8e57abb1ec53540abf8e93dc5c6eeb8a3d3ca97aba24eeead34b0a50c07c6a9b
 pytest-testinfra==10.1.1 \
     --hash=sha256:b990dc7d77b49a1bba24818fbff49b6171d8c46d606fb5ca86b937de690d7062
