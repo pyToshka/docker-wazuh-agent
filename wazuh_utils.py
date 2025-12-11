@@ -65,7 +65,6 @@ def wazuh_request(method, resource, auth_context, data=None, timeout: float | No
         method_lower = method.lower()
         verify = auth_context['verify']
 
-
         if method_lower == "post":
             r = requests.post(url, headers=requests_headers, data=json.dumps(data), verify=verify, timeout=effective_timeout)
         elif method_lower == "put":
