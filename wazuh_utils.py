@@ -18,7 +18,11 @@ def code_desc(http_status_code: int) -> str:
         return "Unknown Status"
 
 
-DEFAULT_TIMEOUT = float(os.environ.get("WAZUH_API_TIMEOUT", "10.0"))
+try:
+    DEFAULT_TIMEOUT = float(os.environ.get("WAZUH_API_TIMEOUT", "10.0"))
+except ValueError:
+    DEFAULT_TIMEOUT = 10.0
+
 
 def wazuh_request(method, resource, auth_context, data=None, timeout: float | None = None):
     """
@@ -74,8 +78,8 @@ def wazuh_request(method, resource, auth_context, data=None, timeout: float | No
 
         return r.status_code, r.json()
 
-    except requests.RequestException as exception:
-        logger.error(f"HTTP error for resource {resource}: {exception}")
+    except (requests.RequestException, json.JSONDecodeError, KeyError) as exception:
+        logger.error(f"Error handling request for resource {resource}: {exception}")
         sys.exit(1)
 
 

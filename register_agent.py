@@ -16,7 +16,7 @@ import time
 
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from wazuh_utils import code_desc
+from wazuh_utils import code_desc, wazuh_request
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 try:
@@ -86,7 +86,7 @@ def create_config_file():
 
 
 def delete_agent(agt_name):
-    status_code, response = wazuh_api("get", f"agents?pretty=true&q=name={agt_name}")
+    status_code, response = wazuh_request("get", f"agents?pretty=true&q=name={agt_name}", auth_context)
     print(response, status_code)
     for items in response["data"]["affected_items"]:
         print(f"Item {items}")
@@ -97,9 +97,10 @@ def delete_agent(agt_name):
         msg = json.dumps(response, indent=4, sort_keys=True)
         code = f"Status: {status_code} - {code_desc(status_code)}"
         logger.error(f"INFO - DELETE AGENT:\n{code}\n{msg}")
-    status_code, response = wazuh_api(
+    status_code, response = wazuh_request(
         "delete",
         "agents?pretty=true&older_than=21d&agents_list=all&status=never_connected,disconnected",
+        auth_context
     )
     for items in response["data"]["affected_items"]:
         status_code, response = wazuh_api(
@@ -109,54 +110,6 @@ def delete_agent(agt_name):
         msg = json.dumps(response, indent=4, sort_keys=True)
         code = f"Status: {status_code} - {code_desc(status_code)}"
         logger.error(f"INFO - DELETE AGENT:\n{code}\n{msg}")
-
-
-def wazuh_api(method, resource, data=None):
-    code = None
-    response_json = {}
-    session = requests.Session()
-    retry = Retry(connect=int(max_retry_count), backoff_factor=0.5)
-    adapter = HTTPAdapter(max_retries=retry)
-    session.mount("https://", adapter)
-    login_headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Basic {b64encode(auth).decode()}",
-    }
-    response = session.get(login_url, headers=login_headers, verify=verify)
-    logger.info(
-        f"Response code {response.status_code} response content {response.content}"
-    )
-    token = json.loads(response.content.decode())["data"]["token"]
-    requests_headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {token}",
-    }
-    url = f"{base_url}/{resource}"
-    try:
-        if method.lower() == "post":
-            response = session.post(
-                url, headers=requests_headers, data=json.dumps(data), verify=verify
-            )
-        elif method.lower() == "put":
-            response = session.put(
-                url, headers=requests_headers, data=data, verify=verify
-            )
-        elif method.lower() == "delete":
-            response = session.delete(
-                url, headers=requests_headers, data=data, verify=verify
-            )
-        else:
-            response = session.get(
-                url, headers=requests_headers, params=data, verify=verify
-            )
-
-        code = response.status_code
-        response_json = response.json()
-
-    except Exception as exception:
-        logger.error(f"Error: for resource {resource}, exception {exception}")
-
-    return code, response_json
 
 
 def check_self():
@@ -171,8 +124,8 @@ health.add_check(check_self)
 
 
 def get_agent_id(agt_name):
-    status_code, response = wazuh_api(
-        "get", f"agents?pretty=true&q=name={agt_name}&wait_for_complete=true"
+    status_code, response = wazuh_request(
+        "get", f"agents?pretty=true&q=name={agt_name}&wait_for_complete=true", auth_context
     )
     logger.debug(f"Response {status_code}: {response}")
     for agt_status in response["data"]["affected_items"]:
@@ -187,9 +140,10 @@ def get_agent_id(agt_name):
 
 
 def add_agent_to_group(wazuh_agent_id, agent_group):
-    status_code, response = wazuh_api(
+    status_code, response = wazuh_request(
         "put",
         f"agents/{wazuh_agent_id}/group/{agent_group}?pretty=true&wait_for_complete=true",
+        auth_context
     )
     response_msg = http_codes_serializer(response=response, status_code=status_code)
 
@@ -216,9 +170,10 @@ def add_agent(agt_name, agt_ip=None):
     else:
         agt_data = {"name": str(agt_name)}
     logger.info(f"Try to add agent with data {agt_data}")
-    status_code, response = wazuh_api(
+    status_code, response = wazuh_request(
         "post",
         "agents/insert",
+        auth_context,
         agt_data,
     )
     response_msg = http_codes_serializer(response=response, status_code=status_code)
@@ -237,12 +192,12 @@ def add_agent(agt_name, agt_ip=None):
 
 def wazuh_agent_status(agt_name, pretty=None):
     if pretty:
-        status_code, response = wazuh_api(
-            "get", f"agents?pretty=true&q=name={agt_name}&wait_for_complete=true"
+        status_code, response = wazuh_request(
+            "get", f"agents?pretty=true&q=name={agt_name}&wait_for_complete=true", auth_context
         )
     else:
-        status_code, response = wazuh_api(
-            "get", f"agents?q=name={agt_name}&wait_for_complete=true"
+        status_code, response = wazuh_request(
+            "get", f"agents?q=name={agt_name}&wait_for_complete=true", auth_context
         )
     response_msg = http_codes_serializer(response=response, status_code=status_code)
     if status_code == 200 and response["error"] == 0:
@@ -323,6 +278,15 @@ if __name__ == "__main__":
     login_url = f"{protocol}://{host}:{port}/{login_endpoint}"
     auth = f"{user}:{password}".encode()
     verify = os.environ.get("WAZUH_API_SSL_VERIFY", "False").lower() in ("true", "1", "yes")
+
+    # Construct auth_context for wazuh_utils
+    auth_context = {
+        "base_url": base_url,
+        "login_url": login_url,
+        "auth": auth,
+        "verify": verify
+    }
+
     create_config_file()
     agent_id, agent_key = add_agent(node_name)
     wazuh_agent_import_key(agent_key.encode())
