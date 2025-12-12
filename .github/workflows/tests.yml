@@ -196,7 +196,7 @@ jobs:
         exit 1
 
     - name: Integration test for Wazuh agent
-      run: pytest  -v --capture=sys -x --tb=long .github/workflows/test_docker_compose.py --disable-warnings --junitxml=/tmp/test-results/wazuh-docker-compose-${{ matrix.wazuh_agent_version }}.xml
+      run: pytest  -v --capture=sys -x --tb=long .github/workflows/test_docker_compose.py --disable-warnings --junitxml=${{ github.workspace }}/test-results/wazuh-docker-compose-${{ matrix.wazuh_agent_version }}.xml
 
     - name: Print container logs
       if: failure()
