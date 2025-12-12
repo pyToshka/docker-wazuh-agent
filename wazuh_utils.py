@@ -11,6 +11,9 @@ from loguru import logger
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
+from typing import Optional
+
+
 def code_desc(http_status_code: int) -> str:
     try:
         return HTTPStatus(http_status_code).phrase
@@ -24,7 +27,7 @@ except ValueError:
     DEFAULT_TIMEOUT = 10.0
 
 
-def wazuh_request(method, resource, auth_context, data=None, timeout: float | None = None):
+def wazuh_request(method, resource, auth_context, data=None, timeout: Optional[float] = None):
     """
     Executes a request to the Wazuh API.
     
