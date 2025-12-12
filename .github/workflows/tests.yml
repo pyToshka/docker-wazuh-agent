@@ -180,23 +180,24 @@ jobs:
         WAZUH_CLUSTER_VERSION: "${{ matrix.wazuh_cluster_version }}"
 
     - name: Check Wazuh indexer start
+      shell: bash
       run: |
-       sleep 60
-       status_green="`curl -XGET "https://0.0.0.0:9200/_cluster/health" -u admin:SecretPassword -k -s | grep green | wc -l`"
-       if [[ $status_green -eq 1 ]]; then
-        curl -XGET "https://0.0.0.0:9200/_cluster/health" -u admin:SecretPassword -k -s
-       else
-        curl -XGET "https://0.0.0.0:9200/_cluster/health" -u admin:SecretPassword -k -s
+        # Wait for Wazuh Indexer to be ready (max 5 minutes)
+        for i in {1..30}; do
+          if curl -k -s "https://localhost:9200/_cluster/health" -u admin:SecretPassword | grep -q "green"; then
+            echo "Wazuh indexer is green!"
+            curl -k -s "https://localhost:9200/_cat/indices" -u admin:SecretPassword
+            exit 0
+          fi
+          echo "Waiting for Wazuh indexer (attempt $i/30)..."
+          sleep 10
+        done
+        echo "Timeout waiting for Wazuh indexer"
         exit 1
-       fi
-       status_index="`curl -XGET "https://0.0.0.0:9200/_cat/indices" -u admin:SecretPassword -k -s | wc -l`"
-       status_index_green="`curl -XGET "https://0.0.0.0:9200/_cat/indices" -u admin:SecretPassword -k -s | grep "green" | wc -l`"
-       if [[ $status_index_green -eq $status_index ]]; then
-        curl -XGET "https://0.0.0.0:9200/_cat/indices" -u admin:SecretPassword -k -s
-       else
-        curl -XGET "https://0.0.0.0:9200/_cat/indices" -u admin:SecretPassword -k -s
-        exit 1
-       fi
+
+    - name: Print container logs
+      if: failure()
+      run: docker compose -f docker-compose.yml logs
 
     - name: Integration test for Wazuh agent
       run: pytest  -v --capture=sys -x --tb=long .github/workflows/test_docker_compose.py --disable-warnings --junitxml=/tmp/test-results/wazuh-docker-compose-${{ matrix.wazuh_agent_version }}.xml
