@@ -41,11 +41,11 @@ jobs:
             wazuh_cluster_version: '4.7.0'
           - wazuh_agent_version: '4.7.2-1'
             wazuh_cluster_version: '4.7.0'
-          # New agents: 4.10.0 cluster
+          # New agents
           - wazuh_agent_version: '4.11.1-1'
-            wazuh_cluster_version: '4.10.0'
+            wazuh_cluster_version: '4.11.0'
           - wazuh_agent_version: '4.14.1-1'
-            wazuh_cluster_version: '4.10.0'
+            wazuh_cluster_version: '4.14.0'
 
    steps:
    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -139,11 +139,11 @@ jobs:
             wazuh_cluster_version: '4.7.0'
           - wazuh_agent_version: '4.7.2-1'
             wazuh_cluster_version: '4.7.0'
-          # New agents: 4.10.0 cluster
+          # New agents
           - wazuh_agent_version: '4.11.1-1'
-            wazuh_cluster_version: '4.10.0'
+            wazuh_cluster_version: '4.11.0'
           - wazuh_agent_version: '4.14.1-1'
-            wazuh_cluster_version: '4.10.0'
+            wazuh_cluster_version: '4.14.0'
     steps:
     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
