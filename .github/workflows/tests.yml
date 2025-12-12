@@ -170,6 +170,9 @@ jobs:
         name: wazuh-unittests-${{ matrix.wazuh_agent_version }}
         path: ${{ github.workspace }}/test-results/
 
+    - name: Free disk space
+      run: docker system prune -a -f
+
     - name: Create single node certificates
       run: docker compose -f tests/single-node/generate-indexer-certs.yml run --rm generator
 
