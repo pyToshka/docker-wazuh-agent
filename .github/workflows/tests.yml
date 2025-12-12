@@ -166,7 +166,7 @@ jobs:
         mkdir -p ${{ github.workspace }}/docker-images/
 
     - name: Download artifact from build job
-      uses: actions/download-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
       with:
         name: wazuh-unittests-${{ matrix.wazuh_agent_version }}
         path: ${{ github.workspace }}/test-results/
