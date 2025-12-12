@@ -112,7 +112,7 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
-        name: wazuh-unittests
+        name: wazuh-unittests-${{ matrix.wazuh_agent_version }}
         path: /tmp/test-results/wazuh-unittests-${{ matrix.wazuh_agent_version }}.xml
 
   integrations-tests:
@@ -168,7 +168,7 @@ jobs:
     - name: Download artifact from build job
       uses: actions/download-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
-        name: wazuh-unittests
+        name: wazuh-unittests-${{ matrix.wazuh_agent_version }}
         path: ${{ github.workspace }}/test-results/
 
     - name: Create single node certificates
