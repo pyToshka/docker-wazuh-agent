@@ -197,7 +197,19 @@ jobs:
 
     - name: Print container logs
       if: failure()
-      run: docker compose -f docker-compose.yml logs
+      shell: bash
+      run: |
+        docker compose -f docker-compose.yml logs
+        echo "=== API LOGS ==="
+        docker compose -f docker-compose.yml exec -T wazuh.manager cat /var/ossec/logs/api.log || echo "api.log not found"
+        echo "=== OSSEC LOGS ==="
+        docker compose -f docker-compose.yml exec -T wazuh.manager cat /var/ossec/logs/ossec.log || echo "ossec.log not found"
+        echo "=== PROCESSES ==="
+        docker compose -f docker-compose.yml exec -T wazuh.manager ps aux || echo "ps failed"
+        echo "=== NETWORK ==="
+        docker compose -f docker-compose.yml exec -T wazuh.manager netstat -tulnp || echo "netstat failed"
+        echo "=== API INSTALLED FILES ==="
+        docker compose -f docker-compose.yml exec -T wazuh.manager ls -la /var/ossec/api/configuration/ || echo "ls failed"
 
     - name: Integration test for Wazuh agent
       run: pytest  -v --capture=sys -x --tb=long .github/workflows/test_docker_compose.py --disable-warnings --junitxml=/tmp/test-results/wazuh-docker-compose-${{ matrix.wazuh_agent_version }}.xml
