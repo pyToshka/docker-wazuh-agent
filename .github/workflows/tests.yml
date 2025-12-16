@@ -180,7 +180,8 @@ jobs:
       run: |
         sudo sysctl -w vm.max_map_count=262144
         sudo chown -R 1000:1000 tests/single-node/config/wazuh_indexer_ssl_certs
-        sudo chmod -R 750 tests/single-node/config/wazuh_indexer_ssl_certs
+        sudo find tests/single-node/config/wazuh_indexer_ssl_certs -type d -exec chmod 700 {} \;
+        sudo find tests/single-node/config/wazuh_indexer_ssl_certs -type f -exec chmod 600 {} \;
 
     - name: Start single node stack
       run: docker compose -f docker-compose.yml up -d --build
