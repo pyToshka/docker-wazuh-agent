@@ -176,6 +176,9 @@ jobs:
     - name: Create single node certificates
       run: docker compose -f tests/single-node/generate-indexer-certs.yml run --rm generator
 
+    - name: Fix certificate permissions
+      run: sudo chmod -R 777 tests/single-node/config/wazuh_indexer_ssl_certs
+
     - name: Start single node stack
       run: docker compose -f docker-compose.yml up -d --build
       env:
