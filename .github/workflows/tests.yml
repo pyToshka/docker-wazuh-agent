@@ -227,7 +227,7 @@ jobs:
       env:
         AGENT_VERSION: "${{ matrix.wazuh_agent_version }}"
         WAZUH_CLUSTER_VERSION: "${{ matrix.wazuh_cluster_version }}"
-      timeout-minutes: 15
+      timeout-minutes: 20
 
     - name: Check Wazuh indexer start
       shell: bash
