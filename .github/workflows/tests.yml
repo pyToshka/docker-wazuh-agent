@@ -182,16 +182,38 @@ jobs:
         sudo find tests/single-node/config/wazuh_indexer_ssl_certs -type d -exec chmod 700 {} \;
         sudo find tests/single-node/config/wazuh_indexer_ssl_certs -type f -exec chmod 600 {} \;
 
-    - name: Build agent image with buildx cache
+    - name: Build minideb agent with cache
       uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
       with:
         context: .
-        file: ${{ matrix.image == 'wazuh-agent-minideb' && './Dockerfile' || format('./images/Dockerfile.{0}', matrix.image == 'wazuh-agent-amazonlinux' && 'amazonlinux' || 'ubuntu') }}
+        file: ./Dockerfile
         build-args: AGENT_VERSION=${{ matrix.wazuh_agent_version }}
-        tags: ${{ matrix.image }}:${{ matrix.wazuh_agent_version }}
+        tags: wazuh-agent-minideb:${{ matrix.wazuh_agent_version }}
         load: true
-        cache-from: type=gha,scope=build-${{ matrix.image }}
-        cache-to: type=gha,mode=max,scope=build-${{ matrix.image }}
+        cache-from: type=gha,scope=build-wazuh-agent-minideb
+        cache-to: type=gha,mode=max,scope=build-wazuh-agent-minideb
+
+    - name: Build amazonlinux agent with cache
+      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+      with:
+        context: .
+        file: ./images/Dockerfile.amazonlinux
+        build-args: AGENT_VERSION=${{ matrix.wazuh_agent_version }}
+        tags: wazuh-agent-amazonlinux:${{ matrix.wazuh_agent_version }}
+        load: true
+        cache-from: type=gha,scope=build-wazuh-agent-amazonlinux
+        cache-to: type=gha,mode=max,scope=build-wazuh-agent-amazonlinux
+
+    - name: Build ubuntu agent with cache
+      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+      with:
+        context: .
+        file: ./images/Dockerfile.ubuntu
+        build-args: AGENT_VERSION=${{ matrix.wazuh_agent_version }}
+        tags: wazuh-agent-ubuntu:${{ matrix.wazuh_agent_version }}
+        load: true
+        cache-from: type=gha,scope=build-wazuh-agent-ubuntu
+        cache-to: type=gha,mode=max,scope=build-wazuh-agent-ubuntu
 
     - name: Pull Wazuh cluster images
       run: |
