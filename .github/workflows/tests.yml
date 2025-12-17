@@ -182,6 +182,17 @@ jobs:
         sudo find tests/single-node/config/wazuh_indexer_ssl_certs -type d -exec chmod 700 {} \;
         sudo find tests/single-node/config/wazuh_indexer_ssl_certs -type f -exec chmod 600 {} \;
 
+    - name: Build agent image with buildx cache
+      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+      with:
+        context: .
+        file: ${{ matrix.image == 'wazuh-agent-minideb' && './Dockerfile' || format('./images/Dockerfile.{0}', matrix.image == 'wazuh-agent-amazonlinux' && 'amazonlinux' || 'ubuntu') }}
+        build-args: AGENT_VERSION=${{ matrix.wazuh_agent_version }}
+        tags: ${{ matrix.image }}:${{ matrix.wazuh_agent_version }}
+        load: true
+        cache-from: type=gha,scope=build-${{ matrix.image }}
+        cache-to: type=gha,mode=max,scope=build-${{ matrix.image }}
+
     - name: Pull Wazuh cluster images
       run: |
         docker pull wazuh/wazuh-manager:${{ matrix.wazuh_cluster_version }} &
@@ -190,13 +201,11 @@ jobs:
         wait
 
     - name: Start single node stack
-      run: docker compose -f docker-compose.yml up -d --build
+      run: docker compose -f docker-compose.yml up -d
       env:
         AGENT_VERSION: "${{ matrix.wazuh_agent_version }}"
         WAZUH_CLUSTER_VERSION: "${{ matrix.wazuh_cluster_version }}"
-        DOCKER_BUILDKIT: "1"
-        COMPOSE_DOCKER_CLI_BUILD: "1"
-      timeout-minutes: 20
+      timeout-minutes: 10
 
     - name: Check Wazuh indexer start
       shell: bash
