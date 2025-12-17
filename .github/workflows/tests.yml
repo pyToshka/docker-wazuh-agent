@@ -217,16 +217,17 @@ jobs:
 
     - name: Pull Wazuh cluster images
       run: |
-        docker pull wazuh/wazuh-manager:${{ matrix.wazuh_cluster_version }}
-        docker pull wazuh/wazuh-indexer:${{ matrix.wazuh_cluster_version }}
-        docker pull wazuh/wazuh-dashboard:${{ matrix.wazuh_cluster_version }}
+        docker pull wazuh/wazuh-manager:${{ matrix.wazuh_cluster_version }} &
+        docker pull wazuh/wazuh-indexer:${{ matrix.wazuh_cluster_version }} &
+        docker pull wazuh/wazuh-dashboard:${{ matrix.wazuh_cluster_version }} &
+        wait
 
     - name: Start single node stack
       run: docker compose -f docker-compose.yml up -d --build
       env:
         AGENT_VERSION: "${{ matrix.wazuh_agent_version }}"
         WAZUH_CLUSTER_VERSION: "${{ matrix.wazuh_cluster_version }}"
-      timeout-minutes: 10
+      timeout-minutes: 15
 
     - name: Check Wazuh indexer start
       shell: bash
