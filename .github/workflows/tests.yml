@@ -181,17 +181,26 @@ jobs:
         name: wazuh-unittests-${{ matrix.wazuh_agent_version }}
         path: ${{ github.workspace }}/test-results/
 
-    - name: Download Docker image artifacts
+    - name: Download Docker image artifact
       uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+      continue-on-error: true
       with:
-        pattern: ${{ matrix.image }}-${{ matrix.wazuh_agent_version }}
+        name: ${{ matrix.image }}-${{ matrix.wazuh_agent_version }}
         path: ${{ github.workspace }}/docker-images/
 
-    - name: Load Docker images
+    - name: Load Docker image
       run: |
-        for img in ${{ github.workspace }}/docker-images/*/*.tar; do
-          docker load -i "$img"
-        done
+        echo "Looking for Docker images..."
+        ls -la ${{ github.workspace }}/docker-images/ || echo "docker-images directory not found"
+        find ${{ github.workspace }}/docker-images/ -name "*.tar" || echo "No tar files found"
+        if [ -f ${{ github.workspace }}/docker-images/${{ matrix.image }}-${{ matrix.wazuh_agent_version }}.tar ]; then
+          echo "Loading ${{ matrix.image }}-${{ matrix.wazuh_agent_version }}.tar"
+          docker load -i ${{ github.workspace }}/docker-images/${{ matrix.image }}-${{ matrix.wazuh_agent_version }}.tar
+        else
+          echo "Warning: Docker image artifact not found at expected location"
+          echo "Trying alternative paths..."
+          find ${{ github.workspace }}/docker-images/ -name "*.tar" -exec docker load -i {} \;
+        fi
 
     - name: Free disk space
       run: docker system prune -a -f
@@ -213,7 +222,7 @@ jobs:
         docker pull wazuh/wazuh-dashboard:${{ matrix.wazuh_cluster_version }}
 
     - name: Start single node stack
-      run: docker compose -f docker-compose.yml up -d
+      run: docker compose -f docker-compose.yml up -d --build
       env:
         AGENT_VERSION: "${{ matrix.wazuh_agent_version }}"
         WAZUH_CLUSTER_VERSION: "${{ matrix.wazuh_cluster_version }}"
