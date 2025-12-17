@@ -109,10 +109,11 @@ services:
       - ./tests/single-node/config/wazuh_indexer_ssl_certs/wazuh.manager-key.pem:/etc/ssl/filebeat.key
       - ./tests/single-node/config/wazuh_cluster/wazuh_manager.conf:/wazuh-config-mount/etc/ossec.conf
     healthcheck:
-      test: curl -k --silent https://wazuh.indexer:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      test: ["CMD-SHELL", "curl -k -s https://wazuh.indexer:9200/_cluster/health -u admin:SecretPassword | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 10
+      start_period: 60s
   wazuh.indexer:
     image: wazuh/wazuh-indexer:${WAZUH_CLUSTER_VERSION:-4.14.1}
     hostname: wazuh.indexer

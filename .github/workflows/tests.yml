@@ -73,6 +73,17 @@ jobs:
         docker pull wazuh/wazuh-indexer:${{ matrix.wazuh_cluster_version }}
         docker pull wazuh/wazuh-dashboard:${{ matrix.wazuh_cluster_version }}
 
+   - name: Save Docker images
+     run: |
+        docker save -o /tmp/${{ matrix.dockerfile.image }}-${{ matrix.wazuh_agent_version }}.tar ${{ matrix.dockerfile.image }}:${{ matrix.wazuh_agent_version }}
+
+   - name: Upload Docker image artifact
+     uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+     with:
+       name: ${{ matrix.dockerfile.image }}-${{ matrix.wazuh_agent_version }}
+       path: /tmp/${{ matrix.dockerfile.image }}-${{ matrix.wazuh_agent_version }}.tar
+       retention-days: 1
+
   pyunit-tests:
     runs-on: ubuntu-latest
     needs: ["test-docker-build"]
@@ -164,11 +175,23 @@ jobs:
         pip install --require-hashes -r requirements-dev.txt
         mkdir -p ${{ github.workspace }}/docker-images/
 
-    - name: Download artifact from build job
+    - name: Download test results artifact
       uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
       with:
         name: wazuh-unittests-${{ matrix.wazuh_agent_version }}
         path: ${{ github.workspace }}/test-results/
+
+    - name: Download Docker image artifacts
+      uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+      with:
+        pattern: ${{ matrix.image }}-${{ matrix.wazuh_agent_version }}
+        path: ${{ github.workspace }}/docker-images/
+
+    - name: Load Docker images
+      run: |
+        for img in ${{ github.workspace }}/docker-images/*/*.tar; do
+          docker load -i "$img"
+        done
 
     - name: Free disk space
       run: docker system prune -a -f
@@ -183,11 +206,18 @@ jobs:
         sudo find tests/single-node/config/wazuh_indexer_ssl_certs -type d -exec chmod 700 {} \;
         sudo find tests/single-node/config/wazuh_indexer_ssl_certs -type f -exec chmod 600 {} \;
 
+    - name: Pull Wazuh cluster images
+      run: |
+        docker pull wazuh/wazuh-manager:${{ matrix.wazuh_cluster_version }}
+        docker pull wazuh/wazuh-indexer:${{ matrix.wazuh_cluster_version }}
+        docker pull wazuh/wazuh-dashboard:${{ matrix.wazuh_cluster_version }}
+
     - name: Start single node stack
-      run: docker compose -f docker-compose.yml up -d --build
+      run: docker compose -f docker-compose.yml up -d
       env:
         AGENT_VERSION: "${{ matrix.wazuh_agent_version }}"
         WAZUH_CLUSTER_VERSION: "${{ matrix.wazuh_cluster_version }}"
+      timeout-minutes: 10
 
     - name: Check Wazuh indexer start
       shell: bash
