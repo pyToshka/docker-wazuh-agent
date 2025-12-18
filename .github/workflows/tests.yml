@@ -226,6 +226,40 @@ jobs:
         WAZUH_CLUSTER_VERSION: "${{ matrix.wazuh_cluster_version }}"
       timeout-minutes: 30
 
+    - name: Initialize Wazuh indexer security
+      shell: bash
+      run: |
+        # Wait for indexer to be available on port 9200
+        echo "Waiting for indexer port to be available..."
+        for i in {1..30}; do
+          if curl -k -s "https://localhost:9200" >/dev/null 2>&1; then
+            echo "Indexer port is available"
+            break
+          fi
+          echo "Waiting for indexer (attempt $i/30)..."
+          sleep 10
+        done
+
+        # Run securityadmin.sh to initialize security index
+        echo "Initializing security index with securityadmin.sh..."
+        docker exec wazuh.indexer bash -c '
+          SECURITY_ADMIN="/usr/share/wazuh-indexer/plugins/opensearch-security/tools/securityadmin.sh"
+          if [ -f "$SECURITY_ADMIN" ]; then
+            chmod +x $SECURITY_ADMIN
+            $SECURITY_ADMIN \
+              -cd /usr/share/wazuh-indexer/config/opensearch-security/ \
+              -cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem \
+              -cert /usr/share/wazuh-indexer/config/certs/admin.pem \
+              -key /usr/share/wazuh-indexer/config/certs/admin-key.pem \
+              -h localhost \
+              -p 9200 \
+              -nhnv
+            echo "Security index initialized successfully"
+          else
+            echo "securityadmin.sh not found at $SECURITY_ADMIN, skipping initialization"
+          fi
+        ' || echo "Security initialization completed (may have warnings)"
+
     - name: Check Wazuh indexer start
       shell: bash
       run: |

@@ -3,6 +3,8 @@ nodes:
   indexer:
     - name: wazuh.indexer
       ip: wazuh.indexer
+    - name: admin
+      ip: admin
 
   # Wazuh server nodes
   # Use node_type only with more than one Wazuh manager
