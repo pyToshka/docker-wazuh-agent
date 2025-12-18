@@ -69,9 +69,26 @@ jobs:
 
    - name: Pull Wazuh cluster images
      run: |
-        docker pull wazuh/wazuh-manager:${{ matrix.wazuh_cluster_version }}
-        docker pull wazuh/wazuh-indexer:${{ matrix.wazuh_cluster_version }}
-        docker pull wazuh/wazuh-dashboard:${{ matrix.wazuh_cluster_version }}
+        retry_pull() {
+          local image=$1
+          local max_attempts=3
+          local attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Pulling $image (attempt $attempt/$max_attempts)..."
+            if docker pull "$image"; then
+              echo "Successfully pulled $image"
+              return 0
+            fi
+            echo "Failed to pull $image, retrying in 10 seconds..."
+            sleep 10
+            attempt=$((attempt + 1))
+          done
+          echo "Failed to pull $image after $max_attempts attempts"
+          return 1
+        }
+        retry_pull wazuh/wazuh-manager:${{ matrix.wazuh_cluster_version }}
+        retry_pull wazuh/wazuh-indexer:${{ matrix.wazuh_cluster_version }}
+        retry_pull wazuh/wazuh-dashboard:${{ matrix.wazuh_cluster_version }}
 
   pyunit-tests:
     runs-on: ubuntu-latest
@@ -214,9 +231,26 @@ jobs:
 
     - name: Pull Wazuh cluster images
       run: |
-        docker pull wazuh/wazuh-manager:${{ matrix.wazuh_cluster_version }} &
-        docker pull wazuh/wazuh-indexer:${{ matrix.wazuh_cluster_version }} &
-        docker pull wazuh/wazuh-dashboard:${{ matrix.wazuh_cluster_version }} &
+        retry_pull() {
+          local image=$1
+          local max_attempts=3
+          local attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Pulling $image (attempt $attempt/$max_attempts)..."
+            if docker pull "$image"; then
+              echo "Successfully pulled $image"
+              return 0
+            fi
+            echo "Failed to pull $image, retrying in 10 seconds..."
+            sleep 10
+            attempt=$((attempt + 1))
+          done
+          echo "Failed to pull $image after $max_attempts attempts"
+          return 1
+        }
+        retry_pull wazuh/wazuh-manager:${{ matrix.wazuh_cluster_version }} &
+        retry_pull wazuh/wazuh-indexer:${{ matrix.wazuh_cluster_version }} &
+        retry_pull wazuh/wazuh-dashboard:${{ matrix.wazuh_cluster_version }} &
         wait
 
     - name: Start single node stack
