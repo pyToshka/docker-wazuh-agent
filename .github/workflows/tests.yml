@@ -1,6 +1,7 @@
 name: Tests
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["CodeQL"]
     branches: [main]
