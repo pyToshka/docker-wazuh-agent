@@ -41,8 +41,10 @@ services:
       - wazuh.indexer:wazuh.indexer
       - wazuh.manager:wazuh.manager
     depends_on:
-      - wazuh.manager
-      - wazuh.indexer
+      wazuh.manager:
+        condition: service_healthy
+      wazuh.indexer:
+        condition: service_healthy
   wazuh-ubuntu-agent:
     build:
       context: .
@@ -63,8 +65,10 @@ services:
       - wazuh.indexer:wazuh.indexer
       - wazuh.manager:wazuh.manager
     depends_on:
-      - wazuh.manager
-      - wazuh.indexer
+      wazuh.manager:
+        condition: service_healthy
+      wazuh.indexer:
+        condition: service_healthy
   wazuh.manager:
     image: wazuh/wazuh-manager:${WAZUH_CLUSTER_VERSION:-4.14.1}
     hostname: wazuh.manager
@@ -134,6 +138,12 @@ services:
       - ./tests/single-node/config/wazuh_indexer/wazuh.indexer.yml:/usr/share/wazuh-indexer/config/opensearch.yml
       - ./tests/single-node/config/wazuh_indexer/wazuh.indexer.yml:/etc/wazuh-indexer/opensearch.yml
       - ./tests/single-node/config/wazuh_indexer/internal_users.yml:/usr/share/wazuh-indexer/config/opensearch-security/internal_users.yml
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -s -u admin:SecretPassword https://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 30
+      start_period: 120s
 
   wazuh.dashboard:
     image: wazuh/wazuh-dashboard:${WAZUH_CLUSTER_VERSION:-4.14.1}
@@ -158,7 +168,8 @@ services:
       - wazuh-dashboard-config:/usr/share/wazuh-dashboard/data/wazuh/config
       - wazuh-dashboard-custom:/usr/share/wazuh-dashboard/plugins/wazuh/public/assets/custom
     depends_on:
-      - wazuh.indexer
+      wazuh.indexer:
+        condition: service_healthy
     links:
       - wazuh.indexer:wazuh.indexer
       - wazuh.manager:wazuh.manager
