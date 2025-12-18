@@ -288,6 +288,7 @@ jobs:
         # Accept both green and yellow status (yellow is normal for single-node clusters)
         for i in {1..30}; do
           HEALTH=$(curl -k -s "https://localhost:9200/_cluster/health" -u admin:SecretPassword 2>/dev/null || true)
+          echo "Health response: $HEALTH"
           if echo "$HEALTH" | grep -qE '"status":"(green|yellow)"'; then
             STATUS=$(echo "$HEALTH" | grep -oE '"status":"[^"]+"' || true)
             echo "Wazuh indexer is ready! $STATUS"
@@ -295,9 +296,23 @@ jobs:
             exit 0
           fi
           echo "Waiting for Wazuh indexer (attempt $i/30)..."
+          # Print additional diagnostics every 5 attempts
+          if [ $((i % 5)) -eq 0 ]; then
+            echo "=== Cluster info ==="
+            curl -k -s "https://localhost:9200/" -u admin:SecretPassword 2>/dev/null || true
+            echo ""
+            echo "=== Security plugin status ==="
+            curl -k -s "https://localhost:9200/_opendistro/_security/health" -u admin:SecretPassword 2>/dev/null || true
+            echo ""
+          fi
           sleep 10
         done
-        echo "Timeout waiting for Wazuh indexer"
+        echo "=== TIMEOUT: Final diagnostics ==="
+        echo "Cluster health:"
+        curl -k -s "https://localhost:9200/_cluster/health" -u admin:SecretPassword 2>/dev/null || true
+        echo ""
+        echo "Indexer logs:"
+        docker logs wazuh.indexer --tail 50 2>&1 || true
         exit 1
 
     - name: Integration test for Wazuh agent
