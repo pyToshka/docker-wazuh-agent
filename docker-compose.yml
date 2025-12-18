@@ -19,8 +19,7 @@ services:
       - JOIN_MANAGER_USER=wazuh-wui
       - JOIN_MANAGER_PASSWORD=MyS3cr37P450r.*-
     depends_on:
-      wazuh.manager:
-        condition: service_healthy
+      - wazuh.manager
   wazuh-amazonlinux-agent:
     build:
       context: .
@@ -41,10 +40,8 @@ services:
       - wazuh.indexer:wazuh.indexer
       - wazuh.manager:wazuh.manager
     depends_on:
-      wazuh.manager:
-        condition: service_healthy
-      wazuh.indexer:
-        condition: service_healthy
+      - wazuh.manager
+      - wazuh.indexer
   wazuh-ubuntu-agent:
     build:
       context: .
@@ -65,10 +62,8 @@ services:
       - wazuh.indexer:wazuh.indexer
       - wazuh.manager:wazuh.manager
     depends_on:
-      wazuh.manager:
-        condition: service_healthy
-      wazuh.indexer:
-        condition: service_healthy
+      - wazuh.manager
+      - wazuh.indexer
   wazuh.manager:
     image: wazuh/wazuh-manager:${WAZUH_CLUSTER_VERSION:-4.14.1}
     hostname: wazuh.manager
@@ -168,8 +163,7 @@ services:
       - wazuh-dashboard-config:/usr/share/wazuh-dashboard/data/wazuh/config
       - wazuh-dashboard-custom:/usr/share/wazuh-dashboard/plugins/wazuh/public/assets/custom
     depends_on:
-      wazuh.indexer:
-        condition: service_healthy
+      - wazuh.indexer
     links:
       - wazuh.indexer:wazuh.indexer
       - wazuh.manager:wazuh.manager
