@@ -230,9 +230,12 @@ jobs:
       shell: bash
       run: |
         # Wait for Wazuh Indexer to be ready (max 5 minutes)
+        # Accept both green and yellow status (yellow is normal for single-node clusters)
         for i in {1..30}; do
-          if curl -k -s "https://localhost:9200/_cluster/health" -u admin:SecretPassword | grep -q "green"; then
-            echo "Wazuh indexer is green!"
+          HEALTH=$(curl -k -s "https://localhost:9200/_cluster/health" -u admin:SecretPassword 2>/dev/null)
+          if echo "$HEALTH" | grep -qE '"status":"(green|yellow)"'; then
+            STATUS=$(echo "$HEALTH" | grep -oE '"status":"[^"]+"')
+            echo "Wazuh indexer is ready! $STATUS"
             curl -k -s "https://localhost:9200/_cat/indices" -u admin:SecretPassword
             exit 0
           fi
