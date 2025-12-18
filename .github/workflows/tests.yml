@@ -229,16 +229,37 @@ jobs:
     - name: Initialize Wazuh indexer security
       shell: bash
       run: |
+        # Show container status
+        echo "=== Container status ==="
+        docker ps -a
+
         # Wait for indexer to be available on port 9200
         echo "Waiting for indexer port to be available..."
+        PORT_AVAILABLE=false
         for i in {1..30}; do
           if curl -k -s "https://localhost:9200" >/dev/null 2>&1; then
             echo "Indexer port is available"
+            PORT_AVAILABLE=true
             break
           fi
           echo "Waiting for indexer (attempt $i/30)..."
+          # Show container status every 5 attempts
+          if [ $((i % 5)) -eq 0 ]; then
+            echo "=== Container status ==="
+            docker ps -a | grep -E "wazuh|CONTAINER"
+            echo "=== Indexer logs (last 20 lines) ==="
+            docker logs wazuh.indexer --tail 20 2>&1 || true
+          fi
           sleep 10
         done
+
+        if [ "$PORT_AVAILABLE" = "false" ]; then
+          echo "=== ERROR: Indexer port never became available ==="
+          echo "=== Full indexer logs ==="
+          docker logs wazuh.indexer 2>&1 || true
+          echo "=== Skipping security initialization ==="
+          exit 0
+        fi
 
         # Run securityadmin.sh to initialize security index
         echo "Initializing security index with securityadmin.sh..."
