@@ -320,6 +320,27 @@ jobs:
         echo "=== Server certificate being presented ==="
         echo | timeout 5 openssl s_client -connect localhost:9200 -servername localhost 2>/dev/null | openssl x509 -noout -subject -issuer 2>&1 || echo "Could not get server cert"
 
+        # Debug: Verify certificate chain with OpenSSL
+        echo "=== OpenSSL certificate chain verification ==="
+        docker compose exec -T wazuh.indexer bash -c '
+          cd /usr/share/wazuh-indexer/config/certs
+
+          echo "--- Verifying admin.pem against root-ca.pem ---"
+          openssl verify -CAfile root-ca.pem admin.pem 2>&1 || echo "CHAIN VERIFICATION FAILED"
+
+          echo "--- Full admin.pem certificate details ---"
+          openssl x509 -in admin.pem -noout -text 2>&1 | grep -E "(Subject:|Issuer:|Signature Algorithm:|Not Before:|Not After:)" || echo "Failed to read admin.pem"
+
+          echo "--- Full root-ca.pem certificate details ---"
+          openssl x509 -in root-ca.pem -noout -text 2>&1 | grep -E "(Subject:|Issuer:|Signature Algorithm:|Not Before:|Not After:)" || echo "Failed to read root-ca.pem"
+
+          echo "--- admin_dn expected from wazuh.indexer.yml ---"
+          grep -A2 "admin_dn" /usr/share/wazuh-indexer/config/opensearch.yml 2>&1 || echo "Not found"
+
+          echo "--- Actual admin certificate Subject DN ---"
+          openssl x509 -in admin.pem -noout -subject -nameopt RFC2253 2>&1 || echo "Failed"
+        ' || true
+
         # Run securityadmin.sh to initialize security index
         echo "Initializing security index with securityadmin.sh..."
         docker compose exec -T wazuh.indexer bash -c '
