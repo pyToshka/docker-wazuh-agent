@@ -299,9 +299,19 @@ jobs:
         # Run securityadmin.sh to initialize security index
         echo "Initializing security index with securityadmin.sh..."
         docker compose exec -T wazuh.indexer bash -c '
+          # Find Java
+          if [ -d "/usr/share/wazuh-indexer/jdk" ]; then
+            export JAVA_HOME="/usr/share/wazuh-indexer/jdk"
+          elif [ -d "/usr/lib/jvm/java-11-openjdk-amd64" ]; then
+            export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
+          fi
+          export PATH="${JAVA_HOME}/bin:${PATH}"
+          echo "Using JAVA_HOME: $JAVA_HOME"
+
           SECURITY_ADMIN="/usr/share/wazuh-indexer/plugins/opensearch-security/tools/securityadmin.sh"
           if [ -f "$SECURITY_ADMIN" ]; then
             chmod +x $SECURITY_ADMIN
+            echo "Running securityadmin.sh..."
             $SECURITY_ADMIN \
               -cd /usr/share/wazuh-indexer/config/opensearch-security/ \
               -cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem \
@@ -309,8 +319,14 @@ jobs:
               -key /usr/share/wazuh-indexer/config/certs/admin-key.pem \
               -h localhost \
               -p 9200 \
-              -nhnv
-            echo "Security index initialized successfully"
+              -nhnv 2>&1
+            RESULT=$?
+            echo "securityadmin.sh exit code: $RESULT"
+            if [ $RESULT -eq 0 ]; then
+              echo "Security index initialized successfully"
+            else
+              echo "securityadmin.sh failed with exit code $RESULT"
+            fi
           else
             echo "securityadmin.sh not found at $SECURITY_ADMIN, skipping initialization"
           fi
