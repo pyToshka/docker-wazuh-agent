@@ -316,6 +316,10 @@ jobs:
           keytool -printcert -file /usr/share/wazuh-indexer/config/certs/admin.pem 2>&1 | grep -E "(Owner|Issuer|Valid|Serial)" || echo "Failed"
         ' || true
 
+        # Debug: Check what certificate the server is actually presenting
+        echo "=== Server certificate being presented ==="
+        echo | timeout 5 openssl s_client -connect localhost:9200 -servername localhost 2>/dev/null | openssl x509 -noout -subject -issuer 2>&1 || echo "Could not get server cert"
+
         # Run securityadmin.sh to initialize security index
         echo "Initializing security index with securityadmin.sh..."
         docker compose exec -T wazuh.indexer bash -c '
