@@ -296,6 +296,21 @@ jobs:
           exit 0
         fi
 
+        # Debug: List certificate files
+        echo "=== Certificate files in mounted volume ==="
+        docker compose exec -T wazuh.indexer ls -la /usr/share/wazuh-indexer/config/certs/ 2>&1 || true
+
+        # Debug: Show certificate subjects
+        echo "=== Certificate chain verification ==="
+        docker compose exec -T wazuh.indexer bash -c '
+          echo "--- root-ca.pem subject ---"
+          openssl x509 -in /usr/share/wazuh-indexer/config/certs/root-ca.pem -noout -subject -issuer 2>&1 || echo "Failed to read root-ca.pem"
+          echo "--- wazuh.indexer.pem subject ---"
+          openssl x509 -in /usr/share/wazuh-indexer/config/certs/wazuh.indexer.pem -noout -subject -issuer 2>&1 || echo "Failed to read wazuh.indexer.pem"
+          echo "--- admin.pem subject (if exists) ---"
+          openssl x509 -in /usr/share/wazuh-indexer/config/certs/admin.pem -noout -subject -issuer 2>&1 || echo "admin.pem not found or unreadable"
+        ' || true
+
         # Run securityadmin.sh to initialize security index
         echo "Initializing security index with securityadmin.sh..."
         docker compose exec -T wazuh.indexer bash -c '
@@ -312,6 +327,7 @@ jobs:
           if [ -f "$SECURITY_ADMIN" ]; then
             chmod +x $SECURITY_ADMIN
             echo "Running securityadmin.sh..."
+            # Use -icl to ignore cluster name and -nhnv to skip hostname verification
             $SECURITY_ADMIN \
               -cd /usr/share/wazuh-indexer/config/opensearch-security/ \
               -cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem \
@@ -319,7 +335,8 @@ jobs:
               -key /usr/share/wazuh-indexer/config/certs/admin-key.pem \
               -h localhost \
               -p 9200 \
-              -nhnv 2>&1
+              -nhnv \
+              -icl 2>&1
             RESULT=$?
             echo "securityadmin.sh exit code: $RESULT"
             if [ $RESULT -eq 0 ]; then
