@@ -283,7 +283,7 @@ jobs:
             echo "=== Container status ==="
             docker ps -a | grep -E "wazuh|CONTAINER"
             echo "=== Indexer logs (last 20 lines) ==="
-            docker logs wazuh.indexer --tail 20 2>&1 || true
+            docker compose logs wazuh.indexer --tail 20 2>&1 || true
           fi
           sleep 10
         done
@@ -291,14 +291,14 @@ jobs:
         if [ "$PORT_AVAILABLE" = "false" ]; then
           echo "=== ERROR: Indexer port never became available ==="
           echo "=== Full indexer logs ==="
-          docker logs wazuh.indexer 2>&1 || true
+          docker compose logs wazuh.indexer 2>&1 || true
           echo "=== Skipping security initialization ==="
           exit 0
         fi
 
         # Run securityadmin.sh to initialize security index
         echo "Initializing security index with securityadmin.sh..."
-        docker exec wazuh.indexer bash -c '
+        docker compose exec -T wazuh.indexer bash -c '
           SECURITY_ADMIN="/usr/share/wazuh-indexer/plugins/opensearch-security/tools/securityadmin.sh"
           if [ -f "$SECURITY_ADMIN" ]; then
             chmod +x $SECURITY_ADMIN
@@ -347,7 +347,7 @@ jobs:
         curl -k -s "https://localhost:9200/_cluster/health" -u admin:SecretPassword 2>/dev/null || true
         echo ""
         echo "Indexer logs:"
-        docker logs wazuh.indexer --tail 50 2>&1 || true
+        docker compose logs wazuh.indexer --tail 50 2>&1 || true
         exit 1
 
     - name: Integration test for Wazuh agent
