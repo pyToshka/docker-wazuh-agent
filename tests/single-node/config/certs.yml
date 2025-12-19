@@ -3,8 +3,6 @@ nodes:
   indexer:
     - name: wazuh.indexer
       ip: wazuh.indexer
-    - name: admin
-      ip: 127.0.0.1
 
   # Wazuh server nodes
   # Use node_type only with more than one Wazuh manager
@@ -16,3 +14,8 @@ nodes:
   dashboard:
     - name: wazuh.dashboard
       ip: wazuh.dashboard
+
+  # Admin certificate for securityadmin.sh
+  admin:
+    - name: admin
+      ip: 127.0.0.1
