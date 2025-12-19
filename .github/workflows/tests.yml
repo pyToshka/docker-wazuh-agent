@@ -346,11 +346,11 @@ jobs:
         SECURITY_STATUS=$(curl -k -s "https://localhost:9200/_opendistro/_security/health" -u admin:SecretPassword 2>&1 || echo "FAILED")
         echo "Security health: $SECURITY_STATUS"
 
-        # Run securityadmin.sh if security is not UP
+        # Run security initialization if security is not UP
         if echo "$SECURITY_STATUS" | grep -q '"status":"UP"'; then
-          echo "Security index already initialized, skipping securityadmin.sh"
+          echo "Security index already initialized, skipping security init"
         else
-          echo "Security index not initialized, running securityadmin.sh..."
+          echo "Security index not initialized, running security initialization..."
           docker compose exec -T wazuh.indexer bash -c '
             # Find Java
             if [ -d "/usr/share/wazuh-indexer/jdk" ]; then
@@ -361,59 +361,37 @@ jobs:
             export PATH="${JAVA_HOME}/bin:${PATH}"
             echo "Using JAVA_HOME: $JAVA_HOME"
 
-            cd /usr/share/wazuh-indexer/config/certs
-
-            # Create JKS truststore from root-ca.pem (helps with older versions)
-            echo "Creating JKS truststore..."
-            rm -f /tmp/truststore.jks 2>/dev/null || true
-            keytool -import -trustcacerts -alias root-ca -file root-ca.pem \
-              -keystore /tmp/truststore.jks -storepass changeit -noprompt 2>&1 || true
-
-            # Create PKCS12 keystore from admin cert and key
-            echo "Creating PKCS12 keystore..."
-            rm -f /tmp/admin.p12 /tmp/admin-keystore.jks 2>/dev/null || true
-            openssl pkcs12 -export -in admin.pem -inkey admin-key.pem \
-              -out /tmp/admin.p12 -name admin -passout pass:changeit 2>&1 || true
-
+            # Try the official Wazuh indexer-security-init.sh script first
+            WAZUH_INIT="/usr/share/wazuh-indexer/bin/indexer-security-init.sh"
             SECURITY_ADMIN="/usr/share/wazuh-indexer/plugins/opensearch-security/tools/securityadmin.sh"
-            if [ -f "$SECURITY_ADMIN" ]; then
+
+            if [ -f "$WAZUH_INIT" ]; then
+              echo "Running Wazuh indexer-security-init.sh..."
+              chmod +x $WAZUH_INIT
+              $WAZUH_INIT 2>&1 || true
+              RESULT=$?
+              echo "indexer-security-init.sh exit code: $RESULT"
+            elif [ -f "$SECURITY_ADMIN" ]; then
+              echo "Wazuh init script not found, using securityadmin.sh directly..."
               chmod +x $SECURITY_ADMIN
-              echo "Running securityadmin.sh with JKS truststore..."
-              # Try with JKS truststore first
+              # Use PEM certificates with --accept-red-cluster for robustness
               $SECURITY_ADMIN \
                 -cd /usr/share/wazuh-indexer/config/opensearch-security/ \
-                -ts /tmp/truststore.jks \
-                -tspass changeit \
-                -ks /tmp/admin.p12 \
-                -kspass changeit \
+                -cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem \
+                -cert /usr/share/wazuh-indexer/config/certs/admin.pem \
+                -key /usr/share/wazuh-indexer/config/certs/admin-key.pem \
                 -h localhost \
                 -p 9200 \
                 -nhnv \
-                -icl 2>&1
+                -icl \
+                --accept-red-cluster 2>&1
               RESULT=$?
               echo "securityadmin.sh exit code: $RESULT"
-
-              # If JKS approach fails, try PEM approach as fallback
               if [ $RESULT -ne 0 ]; then
-                echo "JKS approach failed, trying PEM certificates..."
-                $SECURITY_ADMIN \
-                  -cd /usr/share/wazuh-indexer/config/opensearch-security/ \
-                  -cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem \
-                  -cert /usr/share/wazuh-indexer/config/certs/admin.pem \
-                  -key /usr/share/wazuh-indexer/config/certs/admin-key.pem \
-                  -h localhost \
-                  -p 9200 \
-                  -nhnv \
-                  -icl 2>&1
-                RESULT=$?
-                echo "securityadmin.sh (PEM) exit code: $RESULT"
-              fi
-
-              if [ $RESULT -ne 0 ]; then
-                echo "::warning::securityadmin.sh failed with exit code $RESULT - security may already be initialized"
+                echo "::warning::securityadmin.sh failed with exit code $RESULT"
               fi
             else
-              echo "securityadmin.sh not found at $SECURITY_ADMIN, skipping initialization"
+              echo "No security initialization script found"
             fi
           ' || echo "::warning::Security initialization had issues but continuing..."
         fi
