@@ -341,43 +341,50 @@ jobs:
           openssl x509 -in admin.pem -noout -subject -nameopt RFC2253 2>&1 || echo "Failed"
         ' || true
 
-        # Run securityadmin.sh to initialize security index
-        echo "Initializing security index with securityadmin.sh..."
-        docker compose exec -T wazuh.indexer bash -c '
-          # Find Java
-          if [ -d "/usr/share/wazuh-indexer/jdk" ]; then
-            export JAVA_HOME="/usr/share/wazuh-indexer/jdk"
-          elif [ -d "/usr/lib/jvm/java-11-openjdk-amd64" ]; then
-            export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
-          fi
-          export PATH="${JAVA_HOME}/bin:${PATH}"
-          echo "Using JAVA_HOME: $JAVA_HOME"
+        # Check if security index is already initialized (allow_default_init_securityindex: true)
+        echo "=== Checking if security is already initialized ==="
+        SECURITY_STATUS=$(curl -k -s "https://localhost:9200/_opendistro/_security/health" -u admin:SecretPassword 2>&1 || echo "FAILED")
+        echo "Security health: $SECURITY_STATUS"
 
-          SECURITY_ADMIN="/usr/share/wazuh-indexer/plugins/opensearch-security/tools/securityadmin.sh"
-          if [ -f "$SECURITY_ADMIN" ]; then
-            chmod +x $SECURITY_ADMIN
-            echo "Running securityadmin.sh..."
-            # Use -icl to ignore cluster name and -nhnv to skip hostname verification
-            $SECURITY_ADMIN \
-              -cd /usr/share/wazuh-indexer/config/opensearch-security/ \
-              -cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem \
-              -cert /usr/share/wazuh-indexer/config/certs/admin.pem \
-              -key /usr/share/wazuh-indexer/config/certs/admin-key.pem \
-              -h localhost \
-              -p 9200 \
-              -nhnv \
-              -icl 2>&1
-            RESULT=$?
-            echo "securityadmin.sh exit code: $RESULT"
-            if [ $RESULT -eq 0 ]; then
-              echo "Security index initialized successfully"
-            else
-              echo "securityadmin.sh failed with exit code $RESULT"
+        # Only run securityadmin.sh if security is NOT initialized
+        if echo "$SECURITY_STATUS" | grep -q '"status":"UP"'; then
+          echo "Security index already initialized, skipping securityadmin.sh"
+        else
+          echo "Security index not initialized, running securityadmin.sh..."
+          docker compose exec -T wazuh.indexer bash -c '
+            # Find Java
+            if [ -d "/usr/share/wazuh-indexer/jdk" ]; then
+              export JAVA_HOME="/usr/share/wazuh-indexer/jdk"
+            elif [ -d "/usr/lib/jvm/java-11-openjdk-amd64" ]; then
+              export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
             fi
-          else
-            echo "securityadmin.sh not found at $SECURITY_ADMIN, skipping initialization"
-          fi
-        ' || echo "Security initialization completed (may have warnings)"
+            export PATH="${JAVA_HOME}/bin:${PATH}"
+            echo "Using JAVA_HOME: $JAVA_HOME"
+
+            SECURITY_ADMIN="/usr/share/wazuh-indexer/plugins/opensearch-security/tools/securityadmin.sh"
+            if [ -f "$SECURITY_ADMIN" ]; then
+              chmod +x $SECURITY_ADMIN
+              echo "Running securityadmin.sh..."
+              # Use -icl to ignore cluster name and -nhnv to skip hostname verification
+              $SECURITY_ADMIN \
+                -cd /usr/share/wazuh-indexer/config/opensearch-security/ \
+                -cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem \
+                -cert /usr/share/wazuh-indexer/config/certs/admin.pem \
+                -key /usr/share/wazuh-indexer/config/certs/admin-key.pem \
+                -h localhost \
+                -p 9200 \
+                -nhnv \
+                -icl 2>&1
+              RESULT=$?
+              echo "securityadmin.sh exit code: $RESULT"
+              if [ $RESULT -ne 0 ]; then
+                echo "::error::securityadmin.sh failed with exit code $RESULT"
+              fi
+            else
+              echo "securityadmin.sh not found at $SECURITY_ADMIN, skipping initialization"
+            fi
+          '
+        fi
 
     - name: Check Wazuh indexer start
       shell: bash
