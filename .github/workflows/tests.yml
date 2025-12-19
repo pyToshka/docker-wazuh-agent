@@ -361,22 +361,54 @@ jobs:
             export PATH="${JAVA_HOME}/bin:${PATH}"
             echo "Using JAVA_HOME: $JAVA_HOME"
 
+            cd /usr/share/wazuh-indexer/config/certs
+
+            # Create JKS truststore from root-ca.pem (helps with older versions)
+            echo "Creating JKS truststore..."
+            rm -f /tmp/truststore.jks 2>/dev/null || true
+            keytool -import -trustcacerts -alias root-ca -file root-ca.pem \
+              -keystore /tmp/truststore.jks -storepass changeit -noprompt 2>&1 || true
+
+            # Create PKCS12 keystore from admin cert and key
+            echo "Creating PKCS12 keystore..."
+            rm -f /tmp/admin.p12 /tmp/admin-keystore.jks 2>/dev/null || true
+            openssl pkcs12 -export -in admin.pem -inkey admin-key.pem \
+              -out /tmp/admin.p12 -name admin -passout pass:changeit 2>&1 || true
+
             SECURITY_ADMIN="/usr/share/wazuh-indexer/plugins/opensearch-security/tools/securityadmin.sh"
             if [ -f "$SECURITY_ADMIN" ]; then
               chmod +x $SECURITY_ADMIN
-              echo "Running securityadmin.sh..."
-              # Use -icl to ignore cluster name, -nhnv to skip hostname verification
+              echo "Running securityadmin.sh with JKS truststore..."
+              # Try with JKS truststore first
               $SECURITY_ADMIN \
                 -cd /usr/share/wazuh-indexer/config/opensearch-security/ \
-                -cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem \
-                -cert /usr/share/wazuh-indexer/config/certs/admin.pem \
-                -key /usr/share/wazuh-indexer/config/certs/admin-key.pem \
+                -ts /tmp/truststore.jks \
+                -tspass changeit \
+                -ks /tmp/admin.p12 \
+                -kspass changeit \
                 -h localhost \
                 -p 9200 \
                 -nhnv \
                 -icl 2>&1
               RESULT=$?
               echo "securityadmin.sh exit code: $RESULT"
+
+              # If JKS approach fails, try PEM approach as fallback
+              if [ $RESULT -ne 0 ]; then
+                echo "JKS approach failed, trying PEM certificates..."
+                $SECURITY_ADMIN \
+                  -cd /usr/share/wazuh-indexer/config/opensearch-security/ \
+                  -cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem \
+                  -cert /usr/share/wazuh-indexer/config/certs/admin.pem \
+                  -key /usr/share/wazuh-indexer/config/certs/admin-key.pem \
+                  -h localhost \
+                  -p 9200 \
+                  -nhnv \
+                  -icl 2>&1
+                RESULT=$?
+                echo "securityadmin.sh (PEM) exit code: $RESULT"
+              fi
+
               if [ $RESULT -ne 0 ]; then
                 echo "::warning::securityadmin.sh failed with exit code $RESULT - security may already be initialized"
               fi
