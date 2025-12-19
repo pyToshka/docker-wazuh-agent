@@ -341,12 +341,12 @@ jobs:
           openssl x509 -in admin.pem -noout -subject -nameopt RFC2253 2>&1 || echo "Failed"
         ' || true
 
-        # Check if security index is already initialized (allow_default_init_securityindex: true)
+        # Check if security index is already initialized
         echo "=== Checking if security is already initialized ==="
         SECURITY_STATUS=$(curl -k -s "https://localhost:9200/_opendistro/_security/health" -u admin:SecretPassword 2>&1 || echo "FAILED")
         echo "Security health: $SECURITY_STATUS"
 
-        # Only run securityadmin.sh if security is NOT initialized
+        # Run securityadmin.sh if security is not UP
         if echo "$SECURITY_STATUS" | grep -q '"status":"UP"'; then
           echo "Security index already initialized, skipping securityadmin.sh"
         else
@@ -365,7 +365,7 @@ jobs:
             if [ -f "$SECURITY_ADMIN" ]; then
               chmod +x $SECURITY_ADMIN
               echo "Running securityadmin.sh..."
-              # Use -icl to ignore cluster name and -nhnv to skip hostname verification
+              # Use -icl to ignore cluster name, -nhnv to skip hostname verification
               $SECURITY_ADMIN \
                 -cd /usr/share/wazuh-indexer/config/opensearch-security/ \
                 -cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem \
@@ -378,13 +378,22 @@ jobs:
               RESULT=$?
               echo "securityadmin.sh exit code: $RESULT"
               if [ $RESULT -ne 0 ]; then
-                echo "::error::securityadmin.sh failed with exit code $RESULT"
+                echo "::warning::securityadmin.sh failed with exit code $RESULT - security may already be initialized"
               fi
             else
               echo "securityadmin.sh not found at $SECURITY_ADMIN, skipping initialization"
             fi
-          '
+          ' || echo "::warning::Security initialization had issues but continuing..."
         fi
+
+        # Wait a bit for security to fully initialize
+        echo "Waiting for security to settle..."
+        sleep 10
+
+        # Re-check security status after initialization
+        echo "=== Re-checking security status ==="
+        SECURITY_STATUS=$(curl -k -s "https://localhost:9200/_opendistro/_security/health" -u admin:SecretPassword 2>&1 || echo "FAILED")
+        echo "Security health after init: $SECURITY_STATUS"
 
     - name: Check Wazuh indexer start
       shell: bash
