@@ -37,16 +37,17 @@ RUN pip3 install --break-system-packages --no-index /tmp/wheel/*.whl && \
   rm -rf  /tmp/* /var/tmp/* /var/log/* && \
   chown -R wazuh:wazuh /var/ossec/
 
-# Create SCA directory
-RUN mkdir -p /var/ossec/etc/shared/sca
+# Ensure SCA ruleset directory exists
+RUN mkdir -p /var/ossec/ruleset/sca
 
-# Copy all SCA policies
-COPY sca/*.yml /var/ossec/etc/shared/sca/
+# Copy SCA policies into agent ruleset
+COPY sca/*.yml /var/ossec/ruleset/sca/
 
-# Set ownership for directory and all files
-RUN chown -R root:wazuh /var/ossec/etc/shared/sca && \
-    chmod 750 /var/ossec/etc/shared/sca && \
-    chmod 640 /var/ossec/etc/shared/sca/*.yml
+# Permissions
+RUN chown -R root:wazuh /var/ossec/ruleset/sca && \
+    chmod 750 /var/ossec/ruleset/sca && \
+    chmod 640 /var/ossec/ruleset/sca/*.yml
+
 
 EXPOSE 5000
 ENTRYPOINT ["./register_agent.py"]
