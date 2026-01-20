@@ -1,7 +1,39 @@
-FROM --platform=$TARGETPLATFORM bitnami/minideb@sha256:bce8004f7da6547bc568e92895e1b3a3835e6dba48283fbbf9b3f66c1d166c6d
+############################
+# Builder stage
+############################
+FROM ubuntu:22.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip \
+    python3-dev \
+    gcc \
+    build-essential \
+    ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt /tmp/requirements.txt
+
+# Build wheels for target architecture
+RUN pip3 wheel \
+    --no-cache-dir \
+    --wheel-dir /tmp/wheels \
+    -r /tmp/requirements.txt
+
+
+############################
+# Runtime stage
+############################
+FROM ubuntu:22.04
+
 LABEL maintainer="support@opennix.ru"
-LABEL description="Wazuh Docker Agent"
+LABEL description="Wazuh Docker Agent (Hardened Ubuntu)"
+
+ENV DEBIAN_FRONTEND=noninteractive
+
 ARG AGENT_VERSION="4.11.1-1"
+
 ENV JOIN_MANAGER_MASTER_HOST=""
 ENV JOIN_MANAGER_WORKER_HOST=""
 ENV VIRUS_TOTAL_KEY=""
@@ -12,40 +44,49 @@ ENV JOIN_MANAGER_API_PORT="55000"
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-RUN install_packages \
-  procps curl apt-transport-https gnupg2 inotify-tools \
-  python3-docker python3-setuptools python3-pip && \
-  curl -fsSL https://packages.wazuh.com/key/GPG-KEY-WAZUH \
-    | gpg --dearmor -o /usr/share/keyrings/wazuh.gpg && \
-  echo "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main" \
-    > /etc/apt/sources.list.d/wazuh.list && \
-  install_packages wazuh-agent=${AGENT_VERSION} && \
-  mkdir -p /usr/share/man/man1 && \
-  install_packages openjdk-17-jre-headless
+# 🔐 OS security upgrades + minimal packages
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+      curl \
+      ca-certificates \
+      gnupg \
+      inotify-tools \
+      procps \
+      python3 \
+      python3-pip \
+      python3-setuptools \
+      python3-docker \
+      openjdk-17-jre-headless \
+ && rm -rf /var/lib/apt/lists/*
 
-COPY *.py *.jinja2  /var/ossec/
+# Wazuh repo (secure keyring)
+RUN curl -fsSL https://packages.wazuh.com/key/GPG-KEY-WAZUH \
+    | gpg --dearmor -o /usr/share/keyrings/wazuh.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main" \
+    > /etc/apt/sources.list.d/wazuh.list && \
+    apt-get update && \
+    apt-get install -y wazuh-agent=${AGENT_VERSION} && \
+    rm -rf /var/lib/apt/lists/*
+
+# App files
+COPY *.py *.jinja2 /var/ossec/
 WORKDIR /var/ossec/
-COPY requirements.txt /tmp/requirements.txt
+
+# Python wheels from builder
+COPY --from=builder /tmp/wheels /tmp/wheels
+
 RUN pip3 install \
-    --break-system-packages \
     --no-cache-dir \
-    --prefer-binary \
-    -r /tmp/requirements.txt && \
-    chmod +x /var/ossec/deregister_agent.py && \
+    --no-index \
+    /tmp/wheels/* && \
     chmod +x /var/ossec/register_agent.py && \
-    apt-get clean autoclean && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/{apt,dpkg,cache,log}/ && \
-    rm -rf /tmp/* /var/tmp/* /var/log/* && \
+    chmod +x /var/ossec/deregister_agent.py && \
+    rm -rf /tmp/* && \
     chown -R wazuh:wazuh /var/ossec/
 
-# Ensure SCA ruleset directory exists
+# SCA policies
 RUN mkdir -p /var/ossec/ruleset/sca
-
-# Copy SCA policies into agent ruleset
 COPY sca/*.yml /var/ossec/ruleset/sca/
-
-# Permissions
 RUN chown -R root:wazuh /var/ossec/ruleset/sca && \
     chmod 750 /var/ossec/ruleset/sca && \
     chmod 640 /var/ossec/ruleset/sca/*.yml
