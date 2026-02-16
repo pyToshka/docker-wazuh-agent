@@ -1,13 +1,14 @@
-ARG TAG=@sha256:145bacc9db29ff9c9c021284e5b7b22f1193fc38556c578250c926cf3c883a13
-FROM ubuntu${TAG} as builder
+ARG TAG=@sha256:c35e29c9450151419d9448b0fd75374fec4fff364a27f176fb458d472dfc9e54
+FROM ubuntu${TAG} AS builder
 COPY requirements.txt /tmp
-RUN apt update && apt install python3-pip python3-setuptools python3-dev gcc -y && \
-     python3 -m pip wheel -w /tmp/wheel -r /tmp/requirements.txt
+RUN apt-get update --fix-missing -o Acquire::Retries=3 && \
+  apt-get install -y --no-install-recommends python3-pip python3-setuptools python3-dev gcc && \
+  python3 -m pip wheel -w /tmp/wheel -r /tmp/requirements.txt
 
 FROM ubuntu${TAG}
 LABEL maintainer="support@opennix.ru"
 LABEL description="Ubuntu 24.04 Wazuh Docker Agent"
-ARG AGENT_VERSION="4.3.10-1"
+ARG AGENT_VERSION="4.14.1-1"
 ENV JOIN_MANAGER_MASTER_HOST=""
 ENV JOIN_MANAGER_WORKER_HOST=""
 ENV VIRUS_TOTAL_KEY=""
@@ -20,19 +21,31 @@ ENV PYTHONUNBUFFERED=1
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PIP_ROOT_USER_ACTION=ignore
 ENV TZ=Etc/UTC
-COPY *.py *.jinja2  /var/ossec/
-WORKDIR /var/ossec/
-COPY --from=builder /tmp/wheel /tmp/wheel
-RUN apt update && apt install -y procps curl apt-transport-https gnupg2 inotify-tools python3-docker python3-setuptools python3-pip && \
-  curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - && \
-  echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list && \
-  apt update && apt install -y wazuh-agent=${AGENT_VERSION}  && \
+
+RUN apt-get update --fix-missing -o Acquire::Retries=3 && apt-get install -y --no-install-recommends \
+  procps \
+  curl \
+  apt-transport-https \
+  gnupg2 \
+  inotify-tools \
+  python3-docker \
+  python3-setuptools \
+  python3-pip && \
+  curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | gpg --dearmor -o /usr/share/keyrings/wazuh.gpg && \
+  echo "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main" | \
+  tee /etc/apt/sources.list.d/wazuh.list && \
+  apt-get update --fix-missing -o Acquire::Retries=3 && apt-get install -y wazuh-agent=${AGENT_VERSION} && \
   mkdir -p /usr/share/man/man1 && \
-  apt install -y openjdk-11-jdk
+  apt-get install -y openjdk-11-jdk
+
 COPY *.py *.jinja2  /var/ossec/
 WORKDIR /var/ossec/
 COPY --from=builder /tmp/wheel /tmp/wheel
-RUN pip3 install --break-system-packages --no-index /tmp/wheel/*.whl && \
+
+RUN pip3 install \
+  --ignore-installed \
+  --break-system-packages \
+  --no-index /tmp/wheel/*.whl && \
   chmod +x /var/ossec/deregister_agent.py && \
   chmod +x /var/ossec/register_agent.py && \
   apt-get clean autoclean && \

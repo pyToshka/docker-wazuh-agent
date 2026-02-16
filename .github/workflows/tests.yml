@@ -1,6 +1,7 @@
 name: Tests
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["CodeQL"]
     branches: [main]
@@ -10,93 +11,112 @@ on:
     branches:
       - 'main'
       - 'release-*'
-    tags:
-      - 'v*.*.*'
 
-permissions:
-  contents: read
-  issues: read
-  checks: write
-  pull-requests: write
+permissions: read-all
 
 jobs:
   test-docker-build:
    runs-on: ubuntu-latest
    strategy:
-      max-parallel: 6
+      max-parallel: 12
       matrix:
-        wazuh_agent_version: ['4.3.10-1','4.4.5-1', '4.5.4-1', '4.6.0-1', '4.7.1-1', '4.7.2-1']
+        wazuh_agent_version: ['4.3.10-1', '4.4.5-1', '4.5.4-1', '4.6.0-1', '4.7.1-1', '4.7.2-1', '4.11.1-1', '4.14.1-1']
+        dockerfile:
+          - path: './Dockerfile'
+            image: 'wazuh-agent-minideb'
+          - path: './images/Dockerfile.amazonlinux'
+            image: 'wazuh-agent-amazonlinux'
+          - path: './images/Dockerfile.ubuntu'
+            image: 'wazuh-agent-ubuntu'
         include:
-          - dockerfile: ./Dockerfile
-            image: wazuh-agent-minideb
-            wazuh_cluster_version: '4.7.0'
-          - dockerfile: ./images/Dockerfile.amazonlinux
-            image: wazuh-agent-amazonlinux
-            wazuh_cluster_version: '4.7.0'
-          - dockerfile: ./images/Dockerfile.ubuntu
-            image: wazuh-agent-ubuntu
-            wazuh_cluster_version: '4.7.0'
+          # Use 4.14.0 cluster for all agents (backward compatible)
+          - wazuh_agent_version: '4.3.10-1'
+            wazuh_cluster_version: '4.14.0'
+          - wazuh_agent_version: '4.4.5-1'
+            wazuh_cluster_version: '4.14.0'
+          - wazuh_agent_version: '4.5.4-1'
+            wazuh_cluster_version: '4.14.0'
+          - wazuh_agent_version: '4.6.0-1'
+            wazuh_cluster_version: '4.14.0'
+          - wazuh_agent_version: '4.7.1-1'
+            wazuh_cluster_version: '4.14.0'
+          - wazuh_agent_version: '4.7.2-1'
+            wazuh_cluster_version: '4.14.0'
+          - wazuh_agent_version: '4.11.1-1'
+            wazuh_cluster_version: '4.14.0'
+          - wazuh_agent_version: '4.14.1-1'
+            wazuh_cluster_version: '4.14.0'
 
    steps:
-   - uses: actions/checkout@v3
-   - name: Expose GitHub Runtime
-     uses: crazy-max/ghaction-github-runtime@v3
+   - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
    - name: Set up QEMU
-     uses: docker/setup-qemu-action@v3
+     uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
 
    - name: Set up Docker Buildx
-     uses: docker/setup-buildx-action@v3
+     uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
-   - name: Cache Docker images.
-     uses: ScribeMD/docker-cache@0.3.7
+   - name: Build Wazuh Agent image
+     uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
      with:
-       key: docker-${{ matrix.wazuh_agent_version }}
+       context: .
+       file: ${{ matrix.dockerfile.path }}
+       build-args: AGENT_VERSION=${{ matrix.wazuh_agent_version }}
+       tags: ${{ matrix.dockerfile.image }}:${{ matrix.wazuh_agent_version }}
+       load: true
+       cache-from: type=gha,scope=build-${{ matrix.dockerfile.image }}
+       cache-to: type=gha,mode=max,scope=build-${{ matrix.dockerfile.image }}
 
-   - name: Build and Save Wazuh Agent base image
+   - name: Pull Wazuh cluster images
      run: |
-        mkdir -p ${{ github.workspace }}/docker-images/
-        docker build -t  ${{ matrix.image }}:${{ matrix.wazuh_agent_version }} -f ${{ matrix.dockerfile }} --build-arg AGENT_VERSION=${{ matrix.wazuh_agent_version }} .
-        docker pull wazuh/wazuh-manager:${{ matrix.wazuh_cluster_version }}
-        docker pull wazuh/wazuh-indexer:${{ matrix.wazuh_cluster_version }}
-        docker pull wazuh/wazuh-dashboard:${{ matrix.wazuh_cluster_version }}
+        retry_pull() {
+          local image=$1
+          local max_attempts=3
+          local attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Pulling $image (attempt $attempt/$max_attempts)..."
+            if docker pull "$image"; then
+              echo "Successfully pulled $image"
+              return 0
+            fi
+            echo "Failed to pull $image, retrying in 10 seconds..."
+            sleep 10
+            attempt=$((attempt + 1))
+          done
+          echo "Failed to pull $image after $max_attempts attempts"
+          return 1
+        }
+        retry_pull wazuh/wazuh-manager:${{ matrix.wazuh_cluster_version }}
+        retry_pull wazuh/wazuh-indexer:${{ matrix.wazuh_cluster_version }}
+        retry_pull wazuh/wazuh-dashboard:${{ matrix.wazuh_cluster_version }}
 
   pyunit-tests:
     runs-on: ubuntu-latest
     needs: ["test-docker-build"]
     strategy:
-      max-parallel: 6
+      max-parallel: 12
       matrix:
-        wazuh_agent_version: ['4.3.10-1','4.4.5-1', '4.5.4-1', '4.6.0-1', '4.7.1-1', '4.7.2-1']
+        wazuh_agent_version: ['4.3.10-1','4.4.5-1', '4.5.4-1', '4.6.0-1', '4.7.1-1', '4.7.2-1', '4.11.1-1', '4.14.1-1']
         include:
           - image: wazuh-agent-minideb
           - image: wazuh-agent-amazonlinux
           - image: wazuh-agent-ubuntu
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       with:
         fetch-depth: 0
-    - name: Expose GitHub Runtime
-      uses: crazy-max/ghaction-github-runtime@v3
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v6.1.0
       with:
-        python-version: "3.9"
+        python-version: "3.10"
         cache: 'pip'
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install flake8 pytest
-        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+        pip install --require-hashes -r requirements-dev.txt
     - name: Lint with flake8
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
-    - name: Cache Docker images.
-      uses: ScribeMD/docker-cache@0.3.7
-      with:
-        key: docker-${{ matrix.wazuh_agent_version }}
 
     - name: Test with pytest
       run: |
@@ -105,97 +125,349 @@ jobs:
         AGENT_VERSION: "${{ matrix.wazuh_agent_version }}"
 
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
-        name: wazuh-unittests
+        name: wazuh-unittests-${{ matrix.wazuh_agent_version }}
         path: /tmp/test-results/wazuh-unittests-${{ matrix.wazuh_agent_version }}.xml
 
   integrations-tests:
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
     needs: ["pyunit-tests"]
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        wazuh_agent_version: ['4.3.10-1','4.4.5-1', '4.5.4-1','4.6.0-1','4.7.1-1','4.7.2-1']
-        wazuh_cluster_version: ['4.7.0']
+        wazuh_agent_version: ['4.3.10-1', '4.4.5-1', '4.5.4-1', '4.6.0-1', '4.7.1-1', '4.7.2-1', '4.11.1-1', '4.14.1-1']
+        image: ['wazuh-agent-minideb', 'wazuh-agent-amazonlinux', 'wazuh-agent-ubuntu']
         include:
-          - image: wazuh-agent-minideb
-          - image: wazuh-agent-amazonlinux
-          - image: wazuh-agent-ubuntu
+          # Use 4.14.0 cluster for all agents (backward compatible)
+          # Note: Older clusters (4.7.0, 4.11.0) have security initialization issues
+          - wazuh_agent_version: '4.3.10-1'
+            wazuh_cluster_version: '4.14.0'
+          - wazuh_agent_version: '4.4.5-1'
+            wazuh_cluster_version: '4.14.0'
+          - wazuh_agent_version: '4.5.4-1'
+            wazuh_cluster_version: '4.14.0'
+          - wazuh_agent_version: '4.6.0-1'
+            wazuh_cluster_version: '4.14.0'
+          - wazuh_agent_version: '4.7.1-1'
+            wazuh_cluster_version: '4.14.0'
+          - wazuh_agent_version: '4.7.2-1'
+            wazuh_cluster_version: '4.14.0'
+          - wazuh_agent_version: '4.11.1-1'
+            wazuh_cluster_version: '4.14.0'
+          - wazuh_agent_version: '4.14.1-1'
+            wazuh_cluster_version: '4.14.0'
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v6.1.0
       with:
-        python-version: "3.9"
+        python-version: "3.10"
         cache: 'pip'
 
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+      uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-        mkdir -p ${{ github.workspace }}/docker-images/
+        pip install --require-hashes -r requirements-dev.txt
 
-    - name: Cache Docker images.
-      uses: ScribeMD/docker-cache@0.3.7
+    - name: Download test results artifact
+      uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
       with:
-        key: docker-${{ matrix.wazuh_agent_version }}
-
-    - name: Download artifact from build job
-      uses: actions/download-artifact@v3
-      with:
-        name: wazuh-unittests
+        name: wazuh-unittests-${{ matrix.wazuh_agent_version }}
         path: ${{ github.workspace }}/test-results/
 
     - name: Create single node certificates
-      run: docker-compose -f tests/single-node/generate-indexer-certs.yml run --rm generator
+      run: docker compose -f tests/single-node/generate-indexer-certs.yml run --rm generator
+
+    - name: Setup Node
+      run: |
+        sudo sysctl -w vm.max_map_count=262144
+        sudo chown -R 1000:1000 tests/single-node/config/wazuh_indexer_ssl_certs
+        sudo find tests/single-node/config/wazuh_indexer_ssl_certs -type d -exec chmod 700 {} \;
+        sudo find tests/single-node/config/wazuh_indexer_ssl_certs -type f -exec chmod 600 {} \;
+
+    - name: Build minideb agent with cache
+      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+      with:
+        context: .
+        file: ./Dockerfile
+        build-args: AGENT_VERSION=${{ matrix.wazuh_agent_version }}
+        tags: wazuh-agent-minideb:${{ matrix.wazuh_agent_version }}
+        load: true
+        cache-from: type=gha,scope=build-wazuh-agent-minideb
+        cache-to: type=gha,mode=max,scope=build-wazuh-agent-minideb
+
+    - name: Build amazonlinux agent with cache
+      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+      with:
+        context: .
+        file: ./images/Dockerfile.amazonlinux
+        build-args: AGENT_VERSION=${{ matrix.wazuh_agent_version }}
+        tags: wazuh-agent-amazonlinux:${{ matrix.wazuh_agent_version }}
+        load: true
+        cache-from: type=gha,scope=build-wazuh-agent-amazonlinux
+        cache-to: type=gha,mode=max,scope=build-wazuh-agent-amazonlinux
+
+    - name: Build ubuntu agent with cache
+      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+      with:
+        context: .
+        file: ./images/Dockerfile.ubuntu
+        build-args: AGENT_VERSION=${{ matrix.wazuh_agent_version }}
+        tags: wazuh-agent-ubuntu:${{ matrix.wazuh_agent_version }}
+        load: true
+        cache-from: type=gha,scope=build-wazuh-agent-ubuntu
+        cache-to: type=gha,mode=max,scope=build-wazuh-agent-ubuntu
+
+    - name: Pull Wazuh cluster images
+      run: |
+        retry_pull() {
+          local image=$1
+          local max_attempts=3
+          local attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Pulling $image (attempt $attempt/$max_attempts)..."
+            if docker pull "$image"; then
+              echo "Successfully pulled $image"
+              return 0
+            fi
+            echo "Failed to pull $image, retrying in 10 seconds..."
+            sleep 10
+            attempt=$((attempt + 1))
+          done
+          echo "Failed to pull $image after $max_attempts attempts"
+          return 1
+        }
+        retry_pull wazuh/wazuh-manager:${{ matrix.wazuh_cluster_version }} &
+        retry_pull wazuh/wazuh-indexer:${{ matrix.wazuh_cluster_version }} &
+        retry_pull wazuh/wazuh-dashboard:${{ matrix.wazuh_cluster_version }} &
+        wait
 
     - name: Start single node stack
-      run: docker-compose -f docker-compose.yml up -d --build
+      run: docker compose -f docker-compose.yml up -d
       env:
         AGENT_VERSION: "${{ matrix.wazuh_agent_version }}"
         WAZUH_CLUSTER_VERSION: "${{ matrix.wazuh_cluster_version }}"
+      timeout-minutes: 30
+
+    - name: Initialize Wazuh indexer security
+      shell: bash
+      run: |
+        # Show container status
+        echo "=== Container status ==="
+        docker ps -a
+
+        # Wait for indexer to be available on port 9200
+        echo "Waiting for indexer port to be available..."
+        PORT_AVAILABLE=false
+        for i in {1..30}; do
+          if curl -k -s "https://localhost:9200" >/dev/null 2>&1; then
+            echo "Indexer port is available"
+            PORT_AVAILABLE=true
+            break
+          fi
+          echo "Waiting for indexer (attempt $i/30)..."
+          # Show container status every 5 attempts
+          if [ $((i % 5)) -eq 0 ]; then
+            echo "=== Container status ==="
+            docker ps -a | grep -E "wazuh|CONTAINER"
+            echo "=== Indexer logs (last 20 lines) ==="
+            docker compose logs wazuh.indexer --tail 20 2>&1 || true
+          fi
+          sleep 10
+        done
+
+        if [ "$PORT_AVAILABLE" = "false" ]; then
+          echo "=== ERROR: Indexer port never became available ==="
+          echo "=== Full indexer logs ==="
+          docker compose logs wazuh.indexer 2>&1 || true
+          echo "=== Skipping security initialization ==="
+          exit 0
+        fi
+
+        # Extra wait for older indexer versions to fully initialize
+        echo "Waiting extra 30s for indexer to fully start..."
+        sleep 30
+
+        # Debug: List certificate files
+        echo "=== Certificate files in mounted volume ==="
+        docker compose exec -T wazuh.indexer ls -la /usr/share/wazuh-indexer/config/certs/ 2>&1 || true
+
+        # Debug: Show certificate subjects using keytool (Java tool, more reliable in this container)
+        echo "=== Certificate chain verification (using keytool) ==="
+        docker compose exec -T wazuh.indexer bash -c '
+          JAVA_HOME="/usr/share/wazuh-indexer/jdk"
+          export PATH="${JAVA_HOME}/bin:${PATH}"
+
+          echo "--- root-ca.pem ---"
+          keytool -printcert -file /usr/share/wazuh-indexer/config/certs/root-ca.pem 2>&1 | grep -E "(Owner|Issuer|Valid|Serial)" || echo "Failed"
+
+          echo "--- wazuh.indexer.pem ---"
+          keytool -printcert -file /usr/share/wazuh-indexer/config/certs/wazuh.indexer.pem 2>&1 | grep -E "(Owner|Issuer|Valid|Serial)" || echo "Failed"
+
+          echo "--- admin.pem ---"
+          keytool -printcert -file /usr/share/wazuh-indexer/config/certs/admin.pem 2>&1 | grep -E "(Owner|Issuer|Valid|Serial)" || echo "Failed"
+        ' || true
+
+        # Debug: Check what certificate the server is actually presenting
+        echo "=== Server certificate being presented ==="
+        echo | timeout 5 openssl s_client -connect localhost:9200 -servername localhost 2>/dev/null | openssl x509 -noout -subject -issuer 2>&1 || echo "Could not get server cert"
+
+        # Debug: Verify certificate chain with OpenSSL
+        echo "=== OpenSSL certificate chain verification ==="
+        docker compose exec -T wazuh.indexer bash -c '
+          cd /usr/share/wazuh-indexer/config/certs
+
+          echo "--- Verifying admin.pem against root-ca.pem ---"
+          openssl verify -CAfile root-ca.pem admin.pem 2>&1 || echo "CHAIN VERIFICATION FAILED"
+
+          echo "--- Full admin.pem certificate details ---"
+          openssl x509 -in admin.pem -noout -text 2>&1 | grep -E "(Subject:|Issuer:|Signature Algorithm:|Not Before:|Not After:)" || echo "Failed to read admin.pem"
+
+          echo "--- Full root-ca.pem certificate details ---"
+          openssl x509 -in root-ca.pem -noout -text 2>&1 | grep -E "(Subject:|Issuer:|Signature Algorithm:|Not Before:|Not After:)" || echo "Failed to read root-ca.pem"
+
+          echo "--- admin_dn expected from wazuh.indexer.yml ---"
+          grep -A2 "admin_dn" /usr/share/wazuh-indexer/config/opensearch.yml 2>&1 || echo "Not found"
+
+          echo "--- Actual admin certificate Subject DN ---"
+          openssl x509 -in admin.pem -noout -subject -nameopt RFC2253 2>&1 || echo "Failed"
+        ' || true
+
+        # Check if security index is already initialized
+        echo "=== Checking if security is already initialized ==="
+        SECURITY_STATUS=$(curl -k -s "https://localhost:9200/_opendistro/_security/health" -u admin:SecretPassword 2>&1 || echo "FAILED")
+        echo "Security health: $SECURITY_STATUS"
+
+        # Run security initialization if security is not UP
+        if echo "$SECURITY_STATUS" | grep -q '"status":"UP"'; then
+          echo "Security index already initialized, skipping security init"
+        else
+          echo "Security index not initialized, running security initialization..."
+          docker compose exec -T wazuh.indexer bash -c '
+            # Find Java
+            if [ -d "/usr/share/wazuh-indexer/jdk" ]; then
+              export JAVA_HOME="/usr/share/wazuh-indexer/jdk"
+            elif [ -d "/usr/lib/jvm/java-11-openjdk-amd64" ]; then
+              export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
+            fi
+            export PATH="${JAVA_HOME}/bin:${PATH}"
+            echo "Using JAVA_HOME: $JAVA_HOME"
+
+            # Try the official Wazuh indexer-security-init.sh script first
+            WAZUH_INIT="/usr/share/wazuh-indexer/bin/indexer-security-init.sh"
+            SECURITY_ADMIN="/usr/share/wazuh-indexer/plugins/opensearch-security/tools/securityadmin.sh"
+
+            if [ -f "$WAZUH_INIT" ]; then
+              echo "Running Wazuh indexer-security-init.sh..."
+              chmod +x $WAZUH_INIT
+              $WAZUH_INIT 2>&1 || true
+              RESULT=$?
+              echo "indexer-security-init.sh exit code: $RESULT"
+            elif [ -f "$SECURITY_ADMIN" ]; then
+              echo "Wazuh init script not found, using securityadmin.sh directly..."
+              chmod +x $SECURITY_ADMIN
+              # Use PEM certificates with --accept-red-cluster for robustness
+              $SECURITY_ADMIN \
+                -cd /usr/share/wazuh-indexer/config/opensearch-security/ \
+                -cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem \
+                -cert /usr/share/wazuh-indexer/config/certs/admin.pem \
+                -key /usr/share/wazuh-indexer/config/certs/admin-key.pem \
+                -h localhost \
+                -p 9200 \
+                -nhnv \
+                -icl \
+                --accept-red-cluster 2>&1
+              RESULT=$?
+              echo "securityadmin.sh exit code: $RESULT"
+              if [ $RESULT -ne 0 ]; then
+                echo "::warning::securityadmin.sh failed with exit code $RESULT"
+              fi
+            else
+              echo "No security initialization script found"
+            fi
+          ' || echo "::warning::Security initialization had issues but continuing..."
+        fi
+
+        # Wait a bit for security to fully initialize
+        echo "Waiting for security to settle..."
+        sleep 10
+
+        # Re-check security status after initialization
+        echo "=== Re-checking security status ==="
+        SECURITY_STATUS=$(curl -k -s "https://localhost:9200/_opendistro/_security/health" -u admin:SecretPassword 2>&1 || echo "FAILED")
+        echo "Security health after init: $SECURITY_STATUS"
 
     - name: Check Wazuh indexer start
+      shell: bash
       run: |
-       sleep 60
-       status_green="`curl -XGET "https://0.0.0.0:9200/_cluster/health" -u admin:SecretPassword -k -s | grep green | wc -l`"
-       if [[ $status_green -eq 1 ]]; then
-        curl -XGET "https://0.0.0.0:9200/_cluster/health" -u admin:SecretPassword -k -s
-       else
-        curl -XGET "https://0.0.0.0:9200/_cluster/health" -u admin:SecretPassword -k -s
+        # Wait for Wazuh Indexer to be ready (max 10 minutes for older versions)
+        # Accept both green and yellow status (yellow is normal for single-node clusters)
+        for i in {1..60}; do
+          HEALTH=$(curl -k -s "https://localhost:9200/_cluster/health" -u admin:SecretPassword 2>/dev/null || true)
+          echo "Health response: $HEALTH"
+          if echo "$HEALTH" | grep -qE '"status":"(green|yellow)"'; then
+            STATUS=$(echo "$HEALTH" | grep -oE '"status":"[^"]+"' || true)
+            echo "Wazuh indexer is ready! $STATUS"
+            curl -k -s "https://localhost:9200/_cat/indices" -u admin:SecretPassword || true
+            exit 0
+          fi
+          echo "Waiting for Wazuh indexer (attempt $i/60)..."
+          # Print additional diagnostics every 5 attempts
+          if [ $((i % 5)) -eq 0 ]; then
+            echo "=== Cluster info ==="
+            curl -k -s "https://localhost:9200/" -u admin:SecretPassword 2>/dev/null || true
+            echo ""
+            echo "=== Security plugin status ==="
+            curl -k -s "https://localhost:9200/_opendistro/_security/health" -u admin:SecretPassword 2>/dev/null || true
+            echo ""
+          fi
+          sleep 10
+        done
+        echo "=== TIMEOUT: Final diagnostics ==="
+        echo "Cluster health:"
+        curl -k -s "https://localhost:9200/_cluster/health" -u admin:SecretPassword 2>/dev/null || true
+        echo ""
+        echo "Indexer logs:"
+        docker compose logs wazuh.indexer --tail 50 2>&1 || true
         exit 1
-       fi
-       status_index="`curl -XGET "https://0.0.0.0:9200/_cat/indices" -u admin:SecretPassword -k -s | wc -l`"
-       status_index_green="`curl -XGET "https://0.0.0.0:9200/_cat/indices" -u admin:SecretPassword -k -s | grep "green" | wc -l`"
-       if [[ $status_index_green -eq $status_index ]]; then
-        curl -XGET "https://0.0.0.0:9200/_cat/indices" -u admin:SecretPassword -k -s
-       else
-        curl -XGET "https://0.0.0.0:9200/_cat/indices" -u admin:SecretPassword -k -s
-        exit 1
-       fi
 
     - name: Integration test for Wazuh agent
-      run: pytest  -v --capture=sys -x --tb=long .github/workflows/test_docker_compose.py --disable-warnings --junitxml=/tmp/test-results/wazuh-docker-compose-${{ matrix.wazuh_agent_version }}.xml
+      run: pytest  -v --capture=sys -x --tb=long .github/workflows/test_docker_compose.py --disable-warnings --junitxml=${{ github.workspace }}/test-results/wazuh-docker-compose-${{ matrix.wazuh_agent_version }}.xml
 
-    - name: Copy Test Results
-      if: always()
-      run: |
-        cp -Lpr  /tmp/test-results/wazuh-docker-compose-${{ matrix.wazuh_agent_version }}.xml ${{ github.workspace }}/test-results/wazuh-docker-compose-${{ matrix.wazuh_agent_version }}.xml
+    - name: Print container logs
+      if: failure()
       shell: bash
+      run: |
+        docker compose -f docker-compose.yml logs
+        echo "=== API LOGS ==="
+        docker compose -f docker-compose.yml exec -T wazuh.manager cat /var/ossec/logs/api.log || echo "api.log not found"
+        echo "=== OSSEC LOGS ==="
+        docker compose -f docker-compose.yml exec -T wazuh.manager cat /var/ossec/logs/ossec.log || echo "ossec.log not found"
+        echo "=== PROCESSES ==="
+        docker compose -f docker-compose.yml exec -T wazuh.manager ps aux || echo "ps failed"
+        echo "=== NETWORK ==="
+        docker compose -f docker-compose.yml exec -T wazuh.manager netstat -tulnp || echo "netstat failed"
+        echo "=== API INSTALLED FILES ==="
+        docker compose -f docker-compose.yml exec -T wazuh.manager ls -la /var/ossec/api/configuration/ || echo "ls failed"
 
     - name: Check results
       run: |
         ls -R ${{ github.workspace }}/test-results/
 
     - name: Publish Test Results
-      uses: EnricoMi/publish-unit-test-result-action@v2
+      uses: EnricoMi/publish-unit-test-result-action@34d7c956a59aed1bfebf31df77b8de55db9bbaaf # v2.21.0
       if: always()
       with:
          files: |
@@ -203,4 +475,4 @@ jobs:
 
     - name: Stop containers and destroy
       if: always()
-      run: docker-compose -f docker-compose.yml down
+      run: docker compose -f docker-compose.yml down

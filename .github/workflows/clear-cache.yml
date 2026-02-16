@@ -4,9 +4,14 @@ on:
     types:
       - closed
 
+permissions: read-all
+
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
     steps:
       - name: Cleanup
         run: |

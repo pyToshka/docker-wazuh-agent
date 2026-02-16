@@ -28,23 +28,37 @@ def get_token():
 
 
 def test_list_agents():
-    agents = []
-    requests_headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {get_token()}",
-    }
-    response = requests.get(
-        f"{protocol}://{host}:{port}/agents?status=active",
-        headers=requests_headers,
-        verify=False,
-    )
-    for agent in response.json()["data"].get("affected_items"):
-        if agent.get("name") == "wazuh.manager":
-            pass
-        else:
-            agents.append((agent["name"]))
+    import time
+    max_retries = 30
+    retry_interval = 10
+    
+    for i in range(max_retries):
+        agents = []
+        requests_headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {get_token()}",
+        }
+        try:
+            response = requests.get(
+                f"{protocol}://{host}:{port}/agents?status=active",
+                headers=requests_headers,
+                verify=False,
+            )
+            if response.status_code == 200:
+                for agent in response.json().get("data", {}).get("affected_items", []):
+                    if agent.get("name") != "wazuh.manager":
+                        agents.append((agent["name"]))
+                
+                if len(agents) >= 3:
+                    break
+        except Exception as e:
+            print(f"Error checking agents: {e}")
+
+        print(f"Waiting for agents to be active (attempt {i+1}/{max_retries}). Found {len(agents)} agents: {agents}")
+        time.sleep(retry_interval)
+
     assert response.status_code == 200
-    assert len(agents) == 3, "Expected at least 3 agents, got {}".format(len(agents))
+    assert len(agents) == 3, "Expected at least 3 agents, got {}. Agents found: {}".format(len(agents), agents)
     assert (
         "wazuh-agent-minideb" in agents
     ), "Expected wazuh-agent-minideb to be in agent list"

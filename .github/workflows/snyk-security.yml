@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Set up Snyk CLI to check for security issues
         uses: snyk/actions/setup@806182742461562b67788a64410098c9d9b96adb
         env:
@@ -28,12 +28,12 @@ jobs:
 
       - name: Snyk Code test
         continue-on-error: true
-        run: snyk code test -d --sarif --severity-threshold=high > snyk-code.sarif # || true
+        run: snyk code test --sarif --severity-threshold=high > snyk-code.sarif # || true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@cf1bb45a277cb3c205638b2cd5c984db1c46a412 # v4.31.7
         continue-on-error: true
         with:
           sarif_file: snyk-code.sarif
