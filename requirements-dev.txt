@@ -16,9 +16,9 @@ click==8.3.1 \
 coverage[toml]==7.13.0 \
     --hash=sha256:d10fd186aac2316f9bbb46ef91977f9d394ded67050ad6d84d94ed6ea2e8e54e \
     --hash=sha256:d4fc2d3bffa87e03da189f6eb3458b0ba18e758f0de2fd1e5406124e47fa0037
-exceptiongroup==1.3.0 \
-    --hash=sha256:4d111e6e0c13d0644cad6ddaa7ed0261a0b36971f6d23e7ec9b4b9097da78a10 \
-    --hash=sha256:8e57abb1ec53540abf8e93dc5c6eeb8a3d3ca97aba24eeead34b0a50c07c6a9b
+exceptiongroup==1.3.1 \
+    --hash=sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219 \
+    --hash=sha256:a7a39a3bd276781e98394987d3a5701d0c4edffb633bb7a5144577f82c773598
 execnet==2.1.2 \
     --hash=sha256:67fba928dd5a544b783f6056f449e5e3931a5c378b128bc18501f7ea79e296ec
 flake8==7.1.1 \
